@@ -1,6 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import { CartItem, Coupon, Product } from '../types';
-import { commaizedNumberWithUnit } from '../shared/utils/commaizedNumber';
+import {
+  commaizedNumberWithCurrencyUnit,
+  commaizedNumberWithUnit,
+} from '../shared/utils/commaizedNumber';
 import { roundedPrice } from '../shared/utils/roundedPrice';
 
 interface ProductWithUI extends Product {
@@ -98,7 +101,13 @@ const getCartTotals = (cart: CartItem[]) => {
   };
 };
 
-const applyCouponDiscount = (totalAfterDiscount: number, selectedCoupon: Coupon | null) => {
+const applyCouponDiscount = ({
+  totalAfterDiscount,
+  selectedCoupon,
+}: {
+  totalAfterDiscount: number;
+  selectedCoupon: Coupon | null;
+}) => {
   if (!selectedCoupon) {
     return totalAfterDiscount;
   }
@@ -122,7 +131,10 @@ const getCartTotalPrice = ({
   selectedCoupon: Coupon | null;
 }) => {
   const { totalAfterDiscount, totalBeforeDiscount } = getCartTotals(cart);
-  const finalTotalAfterDiscount = applyCouponDiscount(totalAfterDiscount, selectedCoupon);
+  const finalTotalAfterDiscount = applyCouponDiscount({
+    totalAfterDiscount,
+    selectedCoupon,
+  });
 
   return {
     totalBeforeDiscount,
@@ -151,7 +163,7 @@ const getProductDiscountedPrice = (item: CartItem): number => {
   return Math.round(price * quantity * (1 - productDiscount));
 };
 
-const getDiscountedItemTotalPrice = ({ item }: { item: CartItem }) => {
+const getDiscountedItemTotalPrice = (item: CartItem) => {
   const { price } = item.product;
   const { quantity } = item;
   const productDiscount = getProductDiscountRate(item);
@@ -166,7 +178,7 @@ const getDiscountedItemTotalPrice = ({ item }: { item: CartItem }) => {
 };
 
 const discountRate = (item: CartItem): number => {
-  const discountedItemTotalPrice = getDiscountedItemTotalPrice({ item });
+  const discountedItemTotalPrice = getDiscountedItemTotalPrice(item);
 
   const originalPrice = item.product.price * item.quantity;
   const hasDiscount = discountedItemTotalPrice < originalPrice;
@@ -219,7 +231,7 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
-  const discountedItemTotalPrice = (item: CartItem) => getDiscountedItemTotalPrice({ item });
+  const discountedItemTotalPrice = (item: CartItem) => getDiscountedItemTotalPrice(item);
 
   // Admin
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
@@ -247,10 +259,10 @@ function App() {
     }
 
     if (isAdmin) {
-      return `${price.toLocaleString()}원`;
+      return commaizedNumberWithUnit(price, '원');
     }
 
-    return `₩${price.toLocaleString()}`;
+    return commaizedNumberWithCurrencyUnit(price, '₩', '원');
   };
 
   const getRemainingStock = (product: Product): number => {
@@ -920,7 +932,7 @@ function App() {
                             <div className="mt-2">
                               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white text-indigo-700">
                                 {coupon.discountType === 'amount'
-                                  ? `${coupon.discountValue.toLocaleString()}원 할인`
+                                  ? `${commaizedNumberWithUnit(coupon.discountValue, '원')} 할인`
                                   : `${coupon.discountValue}% 할인`}
                               </span>
                             </div>
@@ -1342,10 +1354,10 @@ function App() {
                           <div className="flex justify-between text-red-500">
                             <span>할인 금액</span>
                             <span>
-                              {commaizedNumberWithUnit(
+                              {`-${commaizedNumberWithUnit(
                                 roundedPrice(totalBeforeDiscount - totalAfterDiscount),
                                 '원'
-                              )}
+                              )}`}
                             </span>
                           </div>
                         )}

@@ -1,6 +1,5 @@
-import { CartItem } from '../../types';
+import { CartItem, ProductWithUI } from '../../types';
 import { useLocalStorage } from './useLocalStorage';
-import { ProductWithUI } from '../App';
 
 export function useCartItems() {
   const [cart, setCart] = useLocalStorage<CartItem[]>('cart', []);

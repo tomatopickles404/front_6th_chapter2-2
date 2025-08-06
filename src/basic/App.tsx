@@ -1,64 +1,23 @@
-import { useState, useCallback, useEffect } from 'react';
-import { CartItem, Coupon, Product } from '../types';
+import { useState, useEffect } from 'react';
+import { CartItem, Coupon, Product, ProductWithUI } from '../types';
 import {
   commaizedNumberWithCurrencyUnit,
   commaizedNumberWithUnit,
 } from '../shared/utils/commaizedNumber';
 import { roundedPrice } from '../shared/utils/roundedPrice';
-import { useCart } from './hooks';
+import { useCart, useNotification, useProduct } from './hooks';
 
-export interface ProductWithUI extends Product {
-  description?: string;
-  isRecommended?: boolean;
-}
-
-interface Notification {
-  id: string;
-  message: string;
-  type: 'error' | 'success' | 'warning';
-}
-
-// 초기 데이터
-const initialProducts: ProductWithUI[] = [
-  {
-    id: 'p1',
-    name: '상품1',
-    price: 10000,
-    stock: 20,
-    discounts: [
-      { quantity: 10, rate: 0.1 },
-      { quantity: 20, rate: 0.2 },
-    ],
-    description: '최고급 품질의 프리미엄 상품입니다.',
-  },
-  {
-    id: 'p2',
-    name: '상품2',
-    price: 20000,
-    stock: 20,
-    discounts: [{ quantity: 10, rate: 0.15 }],
-    description: '다양한 기능을 갖춘 실용적인 상품입니다.',
-    isRecommended: true,
-  },
-  {
-    id: 'p3',
-    name: '상품3',
-    price: 30000,
-    stock: 20,
-    discounts: [
-      { quantity: 10, rate: 0.2 },
-      { quantity: 30, rate: 0.25 },
-    ],
-    description: '대용량과 고성능을 자랑하는 상품입니다.',
-  },
-];
-
-const hasBulkPurchase = (cart: CartItem[]): boolean => {
-  return cart.some((cartItem) => cartItem.quantity >= 10);
+// 기존 함수는 calculateItemTotal을 사용하도록 수정
+const getDiscountedItemTotalPrice = (item: CartItem, cart: CartItem[]): number => {
+  return calculateItemTotal(item, cart);
 };
 
-const getBulkPurchaseDiscount = (hasBulkPurchase: boolean) => {
-  return hasBulkPurchase ? 0.05 : 0;
+const calculateItemTotal = (item: CartItem, cart: CartItem[]): number => {
+  const { price } = item.product;
+  const { quantity } = item;
+  const discount = getMaxApplicableDiscount(item, cart);
+
+  return Math.round(price * quantity * (1 - discount));
 };
 
 const getMaxApplicableDiscount = (item: CartItem, cart: CartItem[]): number => {
@@ -79,21 +38,6 @@ const getMaxApplicableDiscount = (item: CartItem, cart: CartItem[]): number => {
   return baseDiscount;
 };
 
-const calculateItemTotal = (item: CartItem, cart: CartItem[]): number => {
-  const { price } = item.product;
-  const { quantity } = item;
-  const discount = getMaxApplicableDiscount(item, cart);
-
-  return Math.round(price * quantity * (1 - discount));
-};
-
-// 기존 함수는 calculateItemTotal을 사용하도록 수정
-const getDiscountedItemTotalPrice = (item: CartItem, cart: CartItem[]): number => {
-  return calculateItemTotal(item, cart);
-};
-
-// product
-
 function App() {
   const {
     //coupons
@@ -111,6 +55,10 @@ function App() {
     totalItemCount,
     cartTotalPrice,
   } = useCart();
+
+  const { notifications, addNotification } = useNotification();
+  const { products, addProduct, updateProduct, deleteProduct } = useProduct(addNotification);
+
   const { totalBeforeDiscount, totalAfterDiscount } = cartTotalPrice;
 
   const getRemainingStock = (product: Product): number => {
@@ -131,18 +79,6 @@ function App() {
     return getDiscountedItemTotalPrice(item, cart);
   };
 
-  const [products, setProducts] = useState<ProductWithUI[]>(() => {
-    const saved = localStorage.getItem('products');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return initialProducts;
-      }
-    }
-    return initialProducts;
-  });
-
   // ui
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -152,17 +88,6 @@ function App() {
   const [activeTab, setActiveTab] = useState<'products' | 'coupons'>('products');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-
-  const addNotification = (message: string, type: 'error' | 'success' | 'warning' = 'success') => {
-    const id = Date.now().toString();
-    setNotifications((prev) => [...prev, { id, message, type }]);
-
-    setTimeout(() => {
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-    }, 3000);
-  };
 
   const notifyCompleteOrder = () => {
     const orderNumber = `ORD-${Date.now()}`;
@@ -204,45 +129,11 @@ function App() {
   // ------------------------------------------------------------
 
   useEffect(() => {
-    localStorage.setItem('products', JSON.stringify(products));
-  }, [products]);
-
-  useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
     }, 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
-
-  const addProduct = useCallback(
-    (newProduct: Omit<ProductWithUI, 'id'>) => {
-      const product: ProductWithUI = {
-        ...newProduct,
-        id: `p${Date.now()}`,
-      };
-      setProducts((prev) => [...prev, product]);
-      addNotification('상품이 추가되었습니다.', 'success');
-    },
-    [addNotification]
-  );
-
-  const updateProduct = useCallback(
-    (productId: string, updates: Partial<ProductWithUI>) => {
-      setProducts((prev) =>
-        prev.map((product) => (product.id === productId ? { ...product, ...updates } : product))
-      );
-      addNotification('상품이 수정되었습니다.', 'success');
-    },
-    [addNotification]
-  );
-
-  const deleteProduct = useCallback(
-    (productId: string) => {
-      setProducts((prev) => prev.filter((p) => p.id !== productId));
-      addNotification('상품이 삭제되었습니다.', 'success');
-    },
-    [addNotification]
-  );
 
   const validateUpdateQuantity = ({
     product,
@@ -366,7 +257,7 @@ function App() {
             >
               <span className="mr-2">{notif.message}</span>
               <button
-                onClick={() => setNotifications((prev) => prev.filter((n) => n.id !== notif.id))}
+                onClick={() => addNotification(notif.message, notif.type)}
                 className="text-white hover:text-gray-200"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

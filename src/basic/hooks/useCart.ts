@@ -47,58 +47,44 @@ export const getBulkPurchaseDiscount = (hasBulkPurchase: boolean) => {
   return hasBulkPurchase ? 0.05 : 0;
 };
 
-const getProductDiscountedPrice = (item: CartItem): number => {
-  const { price } = item.product;
-  const { quantity } = item;
-  const productDiscount = getProductDiscountRate(item);
+const calculateCartTotal = (cart: CartItem[], selectedCoupon: Coupon | null) => {
+  let totalBeforeDiscount = 0;
+  let totalAfterDiscount = 0;
 
-  return Math.round(price * quantity * (1 - productDiscount));
-};
+  cart.forEach((item) => {
+    const itemPrice = item.product.price * item.quantity;
+    totalBeforeDiscount += itemPrice;
+    totalAfterDiscount += getProductDiscountedPrice(item, cart);
+  });
 
-const getCartTotals = (cart: CartItem[]) => {
-  const bulkDiscount = getBulkPurchaseDiscount(hasBulkPurchase(cart));
-
-  const { totalBeforeDiscount, totalAfterProductDiscount } = cart.reduce(
-    (acc, item) => {
-      const itemPrice = item.product.price * item.quantity;
-      const productDiscountedPrice = getProductDiscountedPrice(item);
-
-      return {
-        totalBeforeDiscount: acc.totalBeforeDiscount + itemPrice,
-        totalAfterProductDiscount: acc.totalAfterProductDiscount + productDiscountedPrice,
-      };
-    },
-    { totalBeforeDiscount: 0, totalAfterProductDiscount: 0 }
-  );
-
-  const totalAfterDiscount = Math.round(totalAfterProductDiscount * (1 - bulkDiscount));
+  if (selectedCoupon) {
+    if (selectedCoupon.discountType === 'amount') {
+      totalAfterDiscount = Math.max(0, totalAfterDiscount - selectedCoupon.discountValue);
+    } else {
+      totalAfterDiscount = Math.round(
+        totalAfterDiscount * (1 - selectedCoupon.discountValue / 100)
+      );
+    }
+  }
 
   return {
     totalBeforeDiscount: Math.round(totalBeforeDiscount),
-    totalAfterDiscount,
+    totalAfterDiscount: Math.round(totalAfterDiscount),
   };
 };
 
-const applyCouponDiscount = ({
-  totalAfterDiscount,
-  selectedCoupon,
-}: {
-  totalAfterDiscount: number;
-  selectedCoupon: Coupon | null;
-}) => {
-  if (!selectedCoupon) {
-    return totalAfterDiscount;
-  }
+const getProductDiscountedPrice = (item: CartItem, cart: CartItem[]): number => {
+  const { price } = item.product;
+  const { quantity } = item;
 
-  const { discountType, discountValue } = selectedCoupon;
-  const isAmountDiscount = discountType === 'amount';
-  const discount = isAmountDiscount ? discountValue : discountValue / 100;
+  // 개별 상품 할인률 계산
+  const baseDiscount = getProductDiscountRate(item);
 
-  const discountedTotal = isAmountDiscount
-    ? Math.max(0, totalAfterDiscount - discount)
-    : Math.round(totalAfterDiscount * (1 - discount));
+  // 전체 장바구니에서 대량 구매 할인 여부 확인
+  const hasBulkPurchaseInCart = cart.some((cartItem: CartItem) => cartItem.quantity >= 10);
+  const discount = hasBulkPurchaseInCart ? Math.min(baseDiscount + 0.05, 0.5) : baseDiscount;
 
-  return discountedTotal;
+  return Math.round(price * quantity * (1 - discount));
 };
 
 const getCartTotalPrice = ({
@@ -108,16 +94,7 @@ const getCartTotalPrice = ({
   cart: CartItem[];
   selectedCoupon: Coupon | null;
 }) => {
-  const { totalAfterDiscount, totalBeforeDiscount } = getCartTotals(cart);
-  const finalTotalAfterDiscount = applyCouponDiscount({
-    totalAfterDiscount,
-    selectedCoupon,
-  });
-
-  return {
-    totalBeforeDiscount,
-    totalAfterDiscount: finalTotalAfterDiscount,
-  };
+  return calculateCartTotal(cart, selectedCoupon);
 };
 
 const getCoupons = () => {
@@ -178,9 +155,11 @@ export function useCart() {
 
   const validateApplyCoupon = ({
     coupon,
+    totalAfterDiscount,
     notificationMessage,
   }: {
     coupon: Coupon;
+    totalAfterDiscount: number;
     notificationMessage: () => void;
   }) => {
     const isNotOver10000 = totalAfterDiscount < 10000;
@@ -199,7 +178,12 @@ export function useCart() {
     coupon: Coupon;
     notificationMessage: () => void;
   }) => {
-    const isValidate = validateApplyCoupon({ coupon, notificationMessage });
+    const { totalAfterDiscount } = cartTotalPrice;
+    const isValidate = validateApplyCoupon({
+      coupon,
+      totalAfterDiscount,
+      notificationMessage,
+    });
     if (!isValidate) {
       return;
     }

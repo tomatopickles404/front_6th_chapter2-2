@@ -72,41 +72,46 @@ export function getProductDiscountRate(item: CartItem): number {
   }, 0);
 }
 
-export const getDiscountedItemTotalPrice = (item: CartItem) => {
+export const getMaxApplicableDiscount = (item: CartItem, cart: CartItem[]): number => {
+  const { discounts } = item.product;
+  const { quantity } = item;
+
+  const baseDiscount = discounts.reduce((maxDiscount, discount) => {
+    return quantity >= discount.quantity && discount.rate > maxDiscount
+      ? discount.rate
+      : maxDiscount;
+  }, 0);
+
+  const hasBulkPurchaseInCart = cart.some((cartItem) => cartItem.quantity >= 10);
+  if (hasBulkPurchaseInCart) {
+    return Math.min(baseDiscount + 0.05, 0.5); // 대량 구매 시 추가 5% 할인
+  }
+
+  return baseDiscount;
+};
+
+export const calculateItemTotal = (item: CartItem, cart: CartItem[]): number => {
   const { price } = item.product;
   const { quantity } = item;
-  const productDiscount = getProductDiscountRate(item);
+  const discount = getMaxApplicableDiscount(item, cart);
 
-  // 개별 아이템이 10개 이상이면 대량 구매 할인 적용
-  const hasBulkPurchase = quantity >= 10;
-  const bulkDiscount = getBulkPurchaseDiscount(hasBulkPurchase);
-  const totalDiscount = productDiscount + bulkDiscount;
-  const maxDiscount = Math.min(totalDiscount, 0.5);
-
-  return Math.round(price * quantity * (1 - maxDiscount));
+  return Math.round(price * quantity * (1 - discount));
 };
 
-const discountRate = (item: CartItem): number => {
-  const discountedItemTotalPrice = getDiscountedItemTotalPrice(item);
-
-  const originalPrice = item.product.price * item.quantity;
-  const hasDiscount = discountedItemTotalPrice < originalPrice;
-  return hasDiscount ? roundedPrice((1 - discountedItemTotalPrice / originalPrice) * 100) : 0;
-};
-
-const discountedItemTotalPrice = (item: CartItem) => {
-  return getDiscountedItemTotalPrice(item);
+// 기존 함수는 calculateItemTotal을 사용하도록 수정
+export const getDiscountedItemTotalPrice = (item: CartItem, cart: CartItem[]): number => {
+  return calculateItemTotal(item, cart);
 };
 
 // product
 
 function App() {
   const {
+    addCoupon,
     coupons,
     completeOrder: handleCompleteOrder,
     deleteCoupon: handleDeleteCoupon,
     cart,
-    getRemainingStock,
     addToCart,
     removeCartItem: handleRemoveCartItem,
     totalItemCount,
@@ -114,8 +119,24 @@ function App() {
     selectedCoupon,
     applyCoupon,
     resetSelectedCoupon,
+    updateCart,
+    getRemainingStock,
   } = useCart();
   const { totalBeforeDiscount, totalAfterDiscount } = cartTotalPrice;
+
+  const discountRate = (item: CartItem): number => {
+    const discountedItemTotalPriceValue = getDiscountedItemTotalPrice(item, cart);
+
+    const originalPrice = item.product.price * item.quantity;
+    const hasDiscount = discountedItemTotalPriceValue < originalPrice;
+    return hasDiscount
+      ? roundedPrice((1 - discountedItemTotalPriceValue / originalPrice) * 100)
+      : 0;
+  };
+
+  const discountedItemTotalPrice = (item: CartItem) => {
+    return getDiscountedItemTotalPrice(item, cart);
+  };
 
   const [products, setProducts] = useState<ProductWithUI[]>(() => {
     const saved = localStorage.getItem('products');
@@ -203,39 +224,6 @@ function App() {
     resetSelectedCoupon();
   };
 
-  // cart
-
-  // const updateQuantity = useCallback(
-  //   (productId: string, newQuantity: number) => {
-  //     if (newQuantity <= 0) {
-  //       removeFromCart(productId);
-  //       return;
-  //     }
-
-  //     const product = products.find((p) => p.id === productId);
-  //     if (!product) return;
-
-  //     const maxStock = product.stock;
-  //     if (newQuantity > maxStock) {
-  //       addNotification(`재고는 ${maxStock}개까지만 있습니다.`, 'error');
-  //       return;
-  //     }
-
-  //     setCart((prevCart) =>
-  //       prevCart.map((item) =>
-  //         item.product.id === productId ? { ...item, quantity: newQuantity } : item
-  //       )
-  //     );
-  //   },
-  //   [products, removeFromCart, addNotification, getRemainingStock]
-  // );
-
-  // ------------------------------------------------------------
-
-  // total item count
-
-  // ------------------------------------------------------------
-
   useEffect(() => {
     localStorage.setItem('products', JSON.stringify(products));
   }, [products]);
@@ -293,30 +281,6 @@ function App() {
     return true;
   };
 
-  // const addCoupon = useCallback(
-  //   (newCoupon: Coupon) => {
-  //     const existingCoupon = coupons.find((c) => c.code === newCoupon.code);
-  //     if (existingCoupon) {
-  //       addNotification('이미 존재하는 쿠폰 코드입니다.', 'error');
-  //       return;
-  //     }
-  //     setCoupons((prev) => [...prev, newCoupon]);
-  //     addNotification('쿠폰이 추가되었습니다.', 'success');
-  //   },
-  //   [coupons, addNotification]
-  // );
-
-  // const deleteCoupon = useCallback(
-  //   (couponCode: string) => {
-  //     setCoupons((prev) => prev.filter((c) => c.code !== couponCode));
-  //     if (selectedCoupon?.code === couponCode) {
-  //       setSelectedCoupon(null);
-  //     }
-  //     addNotification('쿠폰이 삭제되었습니다.', 'success');
-  //   },
-  //   [selectedCoupon, addNotification]
-  // );
-
   const updateQuantity = (productId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
       handleRemoveCartItem(productId);
@@ -332,11 +296,10 @@ function App() {
       return;
     }
 
-    // setCart((prevCart) =>
-    //   prevCart.map((item) =>
-    //     item.product.id === productId ? { ...item, quantity: newQuantity } : item
-    //   )
-    // );
+    const updatedCart = cart.map((item) =>
+      item.product.id === productId ? { ...item, quantity: newQuantity } : item
+    );
+    updateCart(updatedCart);
   };
 
   const validateAddToCart = (product: ProductWithUI) => {
@@ -375,6 +338,7 @@ function App() {
 
   const handleCouponSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    addCoupon(couponForm as Coupon);
     notifyAddCoupon({ newCoupon: couponForm as Coupon });
     setCouponForm({
       name: '',
@@ -1206,9 +1170,11 @@ function App() {
                                 </button>
                               </div>
                               <div className="text-right">
-                                <span className="text-xs text-red-500 font-medium block">
-                                  -{discountRate(item)}%
-                                </span>
+                                {discountRate(item) > 0 && (
+                                  <span className="text-xs text-red-500 font-medium block">
+                                    -{discountRate(item)}%
+                                  </span>
+                                )}
                                 <p className="text-sm font-medium text-gray-900">
                                   {commaizedNumberWithUnit(
                                     roundedPrice(discountedItemTotalPrice(item)),

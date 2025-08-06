@@ -1,7 +1,17 @@
 import { useCoupon } from './useCoupon';
 import { useCartItems } from './useCartItems';
-import { getProductDiscountRate } from '../App';
 import { CartItem, Coupon } from '../../types';
+
+const getProductDiscountRate = (item: CartItem): number => {
+  const { discounts } = item.product;
+  const { quantity } = item;
+
+  return discounts.reduce((maxDiscount, discount) => {
+    return quantity >= discount.quantity && discount.rate > maxDiscount
+      ? discount.rate
+      : maxDiscount;
+  }, 0);
+};
 
 const getProductDiscountedPrice = (item: CartItem, cart: CartItem[]): number => {
   const { price } = item.product;

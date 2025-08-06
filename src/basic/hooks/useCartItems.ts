@@ -1,18 +1,6 @@
-import { CartItem, Product } from '../../types';
+import { CartItem } from '../../types';
 import { useLocalStorage } from './useLocalStorage';
-
-export interface ProductWithUI extends Product {
-  description?: string;
-  isRecommended?: boolean;
-}
-
-export const hasBulkPurchase = (cart: CartItem[]): boolean => {
-  return cart.some((cartItem) => cartItem.quantity >= 10);
-};
-
-export const getBulkPurchaseDiscount = (hasBulkPurchase: boolean) => {
-  return hasBulkPurchase ? 0.05 : 0;
-};
+import { ProductWithUI } from '../App';
 
 export function useCartItems() {
   const [cart, setCart] = useLocalStorage<CartItem[]>('cart', []);

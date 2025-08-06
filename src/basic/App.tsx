@@ -7,7 +7,7 @@ import {
 import { roundedPrice } from '../shared/utils/roundedPrice';
 import { useCart } from './hooks';
 
-interface ProductWithUI extends Product {
+export interface ProductWithUI extends Product {
   description?: string;
   isRecommended?: boolean;
 }
@@ -53,26 +53,15 @@ const initialProducts: ProductWithUI[] = [
   },
 ];
 
-export const hasBulkPurchase = (cart: CartItem[]): boolean => {
+const hasBulkPurchase = (cart: CartItem[]): boolean => {
   return cart.some((cartItem) => cartItem.quantity >= 10);
 };
 
-export const getBulkPurchaseDiscount = (hasBulkPurchase: boolean) => {
+const getBulkPurchaseDiscount = (hasBulkPurchase: boolean) => {
   return hasBulkPurchase ? 0.05 : 0;
 };
 
-export function getProductDiscountRate(item: CartItem): number {
-  const { discounts } = item.product;
-  const { quantity } = item;
-
-  return discounts.reduce((maxDiscount, discount) => {
-    return quantity >= discount.quantity && discount.rate > maxDiscount
-      ? discount.rate
-      : maxDiscount;
-  }, 0);
-}
-
-export const getMaxApplicableDiscount = (item: CartItem, cart: CartItem[]): number => {
+const getMaxApplicableDiscount = (item: CartItem, cart: CartItem[]): number => {
   const { discounts } = item.product;
   const { quantity } = item;
 
@@ -90,7 +79,7 @@ export const getMaxApplicableDiscount = (item: CartItem, cart: CartItem[]): numb
   return baseDiscount;
 };
 
-export const calculateItemTotal = (item: CartItem, cart: CartItem[]): number => {
+const calculateItemTotal = (item: CartItem, cart: CartItem[]): number => {
   const { price } = item.product;
   const { quantity } = item;
   const discount = getMaxApplicableDiscount(item, cart);
@@ -99,7 +88,7 @@ export const calculateItemTotal = (item: CartItem, cart: CartItem[]): number => 
 };
 
 // 기존 함수는 calculateItemTotal을 사용하도록 수정
-export const getDiscountedItemTotalPrice = (item: CartItem, cart: CartItem[]): number => {
+const getDiscountedItemTotalPrice = (item: CartItem, cart: CartItem[]): number => {
   return calculateItemTotal(item, cart);
 };
 

@@ -107,21 +107,26 @@ export const getDiscountedItemTotalPrice = (item: CartItem, cart: CartItem[]): n
 
 function App() {
   const {
-    addCoupon,
+    //coupons
     coupons,
+    selectedCoupon,
+    addCoupon,
     completeOrder: handleCompleteOrder,
     deleteCoupon: handleDeleteCoupon,
+    handleChangeCoupon,
+    // cart
     cart,
     addToCart,
     removeCartItem: handleRemoveCartItem,
     updateCart,
     totalItemCount,
     cartTotalPrice,
-    selectedCoupon,
-    handleChangeCoupon,
-    getRemainingStock,
   } = useCart();
   const { totalBeforeDiscount, totalAfterDiscount } = cartTotalPrice;
+
+  const getRemainingStock = (product: Product): number => {
+    return product.stock - (cart.find((item) => item.product.id === product.id)?.quantity ?? 0);
+  };
 
   const discountRate = (item: CartItem): number => {
     const discountedItemTotalPriceValue = getDiscountedItemTotalPrice(item, cart);

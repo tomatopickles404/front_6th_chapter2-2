@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { CartItem, Product } from '../../types';
 import { useLocalStorage } from './useLocalStorage';
 
@@ -17,6 +16,7 @@ export const getBulkPurchaseDiscount = (hasBulkPurchase: boolean) => {
 
 export function useCartItems() {
   const [cart, setCart] = useLocalStorage<CartItem[]>('cart', []);
+  const totalItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const updateCart = (newCart: CartItem[]) => {
     setCart(newCart);
@@ -25,10 +25,6 @@ export function useCartItems() {
   const resetCart = () => {
     localStorage.removeItem('cart');
     setCart([]);
-  };
-
-  const getRemainingStock = (product: Product): number => {
-    return product.stock - (cart.find((item) => item.product.id === product.id)?.quantity ?? 0);
   };
 
   const addToCart = ({
@@ -67,25 +63,9 @@ export function useCartItems() {
     setCart((prevCart) => prevCart.filter((item) => item.product.id !== productId));
   };
 
-  useEffect(() => {
-    if (cart.length > 0) {
-      localStorage.setItem('cart', JSON.stringify(cart));
-    } else {
-      localStorage.removeItem('cart');
-    }
-  }, [cart]);
-
-  const [totalItemCount, setTotalItemCount] = useState<number>(0);
-
-  useEffect(() => {
-    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-    setTotalItemCount(count);
-  }, [cart]);
-
   return {
     cart,
     updateCart,
-    getRemainingStock,
     addToCart,
     removeCartItem,
     totalItemCount,

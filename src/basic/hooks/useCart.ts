@@ -65,15 +65,7 @@ export function useCart() {
     resetCoupons,
   } = useCoupon();
 
-  const {
-    cart,
-    updateCart,
-    getRemainingStock,
-    addToCart,
-    removeCartItem,
-    totalItemCount,
-    resetCart,
-  } = useCartItems();
+  const { cart, updateCart, addToCart, removeCartItem, totalItemCount, resetCart } = useCartItems();
 
   const cartTotalPrice = getCartTotalPrice({
     cart,
@@ -103,7 +95,6 @@ export function useCart() {
     // cart
     cart,
     updateCart,
-    getRemainingStock,
     addToCart,
     removeCartItem,
     totalItemCount,

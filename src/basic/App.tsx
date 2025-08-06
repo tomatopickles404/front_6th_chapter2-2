@@ -298,7 +298,7 @@ function App() {
   };
 
   const notifyAddCoupon = ({ newCoupon }: { newCoupon: Coupon }) => {
-    const existingCoupon = coupons.find((c) => c.code === newCoupon.code);
+    const existingCoupon = coupons.find(({ code }) => code === newCoupon.code);
 
     return existingCoupon
       ? addNotification('이미 존재하는 쿠폰 코드입니다.', 'error')
@@ -1187,18 +1187,18 @@ function App() {
                           className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
                           value={selectedCoupon?.code || ''}
                           onChange={(e) =>
-                            handleChangeCoupon(e, () =>
+                            handleChangeCoupon(e, totalAfterDiscount, () =>
                               addNotification('쿠폰이 적용되었습니다.', 'success')
                             )
                           }
                         >
                           <option value="">쿠폰 선택</option>
-                          {coupons.map((coupon) => (
-                            <option key={coupon.code} value={coupon.code}>
-                              {coupon.name} (
-                              {coupon.discountType === 'amount'
-                                ? `${commaizedNumberWithUnit(coupon.discountValue, '원')}`
-                                : `${coupon.discountValue}%`}
+                          {coupons.map(({ code, name, discountType, discountValue }) => (
+                            <option key={code} value={code}>
+                              {name} (
+                              {discountType === 'amount'
+                                ? `${commaizedNumberWithUnit(discountValue, '원')}`
+                                : `${discountValue}%`}
                               )
                             </option>
                           ))}

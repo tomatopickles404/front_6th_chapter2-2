@@ -1,23 +1,6 @@
 import { CartItem, Coupon, Product } from '../../types';
-import { useEffect, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import { getProductDiscountRate } from '../App';
-
-// const applyCoupon = (coupon: Coupon) => {
-//   if (totalAfterDiscount < 10000 && coupon.discountType === 'percentage') {
-//     addNotification('percentage 쿠폰은 10,000원 이상 구매 시 사용 가능합니다.', 'error');
-//     return;
-//   }
-
-//   setSelectedCoupon(coupon);
-//   addNotification('쿠폰이 적용되었습니다.', 'success');
-// };
-
-// const completeOrder = useCallback(() => {
-//   const orderNumber = `ORD-${Date.now()}`;
-//   addNotification(`주문이 완료되었습니다. 주문번호: ${orderNumber}`, 'success');
-//   setCart([]);
-//   setSelectedCoupon(null);
-// }, [addNotification]);
 
 interface ProductWithUI extends Product {
   description?: string;
@@ -196,6 +179,23 @@ export function useCart() {
     setSelectedCoupon(coupon);
   };
 
+  const handleChangeCoupon = (
+    e: ChangeEvent<HTMLSelectElement>,
+    notificationMessage: () => void
+  ) => {
+    const coupon = coupons.find((c) => c.code === e.target.value);
+    if (coupon) {
+      applyCoupon({
+        coupon,
+        notificationMessage,
+      });
+
+      return;
+    }
+
+    resetSelectedCoupon();
+  };
+
   // cart
 
   const [cart, setCart] = useState<CartItem[]>(getCart);
@@ -276,7 +276,7 @@ export function useCart() {
     resetSelectedCoupon,
     addCoupon,
     deleteCoupon,
-    applyCoupon,
+    handleChangeCoupon,
 
     // order
     completeOrder,

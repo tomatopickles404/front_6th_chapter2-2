@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, ChangeEvent } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { CartItem, Coupon, Product } from '../types';
 import {
   commaizedNumberWithCurrencyUnit,
@@ -114,12 +114,11 @@ function App() {
     cart,
     addToCart,
     removeCartItem: handleRemoveCartItem,
+    updateCart,
     totalItemCount,
     cartTotalPrice,
     selectedCoupon,
-    applyCoupon,
-    resetSelectedCoupon,
-    updateCart,
+    handleChangeCoupon,
     getRemainingStock,
   } = useCart();
   const { totalBeforeDiscount, totalAfterDiscount } = cartTotalPrice;
@@ -150,13 +149,13 @@ function App() {
     return initialProducts;
   });
 
+  // ui
   const [isAdmin, setIsAdmin] = useState(false);
-  const [activeTab, setActiveTab] = useState<'products' | 'coupons'>('products');
 
   const [showCouponForm, setShowCouponForm] = useState(false);
-
   const [showProductForm, setShowProductForm] = useState(false);
 
+  const [activeTab, setActiveTab] = useState<'products' | 'coupons'>('products');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
@@ -209,20 +208,6 @@ function App() {
   };
 
   // ------------------------------------------------------------
-
-  const handleChangeCoupon = (e: ChangeEvent<HTMLSelectElement>) => {
-    const coupon = coupons.find((c) => c.code === e.target.value);
-    if (coupon) {
-      applyCoupon({
-        coupon,
-        notificationMessage: () => addNotification('쿠폰이 적용되었습니다.', 'success'),
-      });
-
-      return;
-    }
-
-    resetSelectedCoupon();
-  };
 
   useEffect(() => {
     localStorage.setItem('products', JSON.stringify(products));
@@ -1201,7 +1186,11 @@ function App() {
                         <select
                           className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
                           value={selectedCoupon?.code || ''}
-                          onChange={handleChangeCoupon}
+                          onChange={(e) =>
+                            handleChangeCoupon(e, () =>
+                              addNotification('쿠폰이 적용되었습니다.', 'success')
+                            )
+                          }
                         >
                           <option value="">쿠폰 선택</option>
                           {coupons.map((coupon) => (

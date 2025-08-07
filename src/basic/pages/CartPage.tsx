@@ -1,5 +1,6 @@
 import { CartItem, Coupon, ProductWithUI } from '../../types';
-import { ProductList, CartList, EmptyState } from '../components';
+import { ProductGrid, CartList } from '../components';
+import { EmptyState } from '../components/common';
 import { commaizedNumberWithUnit } from '../../shared/utils/commaizedNumber';
 import { UpdateQuantityResult } from '../utils/cart';
 
@@ -127,7 +128,7 @@ function ProductSection({
       {filteredProducts.length === 0 ? (
         <EmptyState type="search" searchTerm={debouncedSearchTerm} />
       ) : (
-        <ProductList
+        <ProductGrid
           products={filteredProducts}
           remainingStock={remainingStock}
           onAddToCart={onAddToCart}

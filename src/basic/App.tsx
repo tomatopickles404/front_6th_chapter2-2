@@ -1,8 +1,8 @@
 import { CartItem, ProductWithUI } from '../types';
-import { SearchBar } from './components/common';
+import { SearchBar } from '../shared/components';
 import { NotificationList } from './components/notification';
 import { useCart, useNotification, useProduct, useSearch } from './hooks';
-import { useToggle } from '../shared/hooks';
+import { useToggle } from '../shared/hooks/useToggle';
 import { AdminPage } from './pages/AdminPage';
 import { CartPage } from './pages/CartPage';
 

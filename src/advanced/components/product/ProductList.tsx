@@ -1,25 +1,27 @@
 import { ProductWithUI } from '../../../types';
 import { Button } from '../../../shared/components';
 import { useProductList } from '../../hooks/admin';
-import { useCart } from '../../hooks/cart/useCart';
-import { useProduct } from '../../hooks/product/useProduct';
 import { ProductPrice } from './';
-import { useNotification } from '../../hooks/notification/useNotification';
 
 interface ProductListProps {
+  products: ProductWithUI[];
+  remainingStock: (product: ProductWithUI) => number;
+  addProduct: (product: Omit<ProductWithUI, 'id'>) => void;
+  updateProduct: (productId: string, updates: Partial<ProductWithUI>) => void;
+  onDeleteProduct: (productId: string) => void;
+  onAddNotification: (message: string, type: 'success' | 'error' | 'warning') => void;
   isAdmin: boolean;
 }
 
-export function ProductList({ isAdmin }: ProductListProps) {
-  const { addNotification } = useNotification();
-  const {
-    products,
-    addProduct,
-    updateProduct,
-    deleteProduct: handleDeleteProduct,
-    getRemainingStock,
-  } = useProduct(addNotification);
-
+export function ProductList({
+  addProduct,
+  updateProduct,
+  products,
+  remainingStock,
+  onDeleteProduct,
+  onAddNotification,
+  isAdmin,
+}: ProductListProps) {
   const {
     showProductForm,
     editingProduct,
@@ -31,10 +33,6 @@ export function ProductList({ isAdmin }: ProductListProps) {
     handleProductFormChange,
     validateProductForm,
   } = useProductList({ addProduct, updateProduct });
-
-  const { cart } = useCart();
-
-  const remainingStock = (product: ProductWithUI) => getRemainingStock({ product, cart });
 
   return (
     <section className="bg-white rounded-lg border border-gray-200">
@@ -105,7 +103,7 @@ export function ProductList({ isAdmin }: ProductListProps) {
                     수정
                   </button>
                   <button
-                    onClick={() => handleDeleteProduct(product.id)}
+                    onClick={() => onDeleteProduct(product.id)}
                     className="text-red-600 hover:text-red-900"
                   >
                     삭제
@@ -144,7 +142,6 @@ export function ProductList({ isAdmin }: ProductListProps) {
                   required
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">설명</label>
                 <input
@@ -159,7 +156,6 @@ export function ProductList({ isAdmin }: ProductListProps) {
                   className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border"
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">가격</label>
                 <input
@@ -182,7 +178,7 @@ export function ProductList({ isAdmin }: ProductListProps) {
                       const numValue = parseInt(value);
                       const validation = validateProductForm('price', numValue);
                       if (!validation.isValid && validation.message) {
-                        addNotification(validation.message, 'error');
+                        onAddNotification(validation.message, 'error');
                         handleProductFormChange({ ...productForm, price: 0 });
                       }
                     }
@@ -192,7 +188,6 @@ export function ProductList({ isAdmin }: ProductListProps) {
                   required
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">재고</label>
                 <input
@@ -215,7 +210,7 @@ export function ProductList({ isAdmin }: ProductListProps) {
                       const numValue = parseInt(value);
                       const validation = validateProductForm('stock', numValue);
                       if (!validation.isValid && validation.message) {
-                        addNotification(validation.message, 'error');
+                        onAddNotification(validation.message, 'error');
 
                         // Auto-correct to valid range
                         if (numValue < 0) {
@@ -232,7 +227,6 @@ export function ProductList({ isAdmin }: ProductListProps) {
                 />
               </div>
             </div>
-
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">할인 정책</label>
               <div className="space-y-2">

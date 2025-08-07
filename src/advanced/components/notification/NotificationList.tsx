@@ -1,7 +1,11 @@
-import { useNotification } from '../../hooks/notification/useNotification';
+import { Notification } from '../../../types';
 
-export function NotificationList() {
-  const { notifications, addNotification: handleAddNotification } = useNotification();
+interface NotificationListProps {
+  notifications: Notification[];
+  onDismiss: (message: string, type?: 'error' | 'success' | 'warning') => void;
+}
+
+export function NotificationList({ notifications, onDismiss }: NotificationListProps) {
   if (notifications.length === 0) {
     return null;
   }
@@ -21,7 +25,7 @@ export function NotificationList() {
         >
           <span className="mr-2">{notif.message}</span>
           <button
-            onClick={() => handleAddNotification(notif.message, notif.type)}
+            onClick={() => onDismiss(notif.message, notif.type)}
             className="text-white hover:text-gray-200"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

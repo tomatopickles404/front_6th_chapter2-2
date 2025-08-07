@@ -1,7 +1,7 @@
 import { CartItem, ProductWithUI } from '../types';
 import { SearchBar } from '../shared/components';
 import { NotificationList } from './components/notification';
-import { useCart, useNotification, useProduct, useSearch } from './hooks';
+import { useCart, useSearch, useProduct } from './hooks';
 import { useToggle } from '../shared/hooks/useToggle';
 import { AdminPage } from './pages/AdminPage';
 import { CartPage } from './pages/CartPage';
@@ -27,44 +27,34 @@ export default function App() {
     completeOrder,
   } = useCart();
 
-  const { notifications, addNotification } = useNotification();
-  const { products, addProduct, updateProduct, deleteProduct, getRemainingStock } =
-    useProduct(addNotification);
-
+  const { products } = useProduct();
   const { toggle: toggleAdmin, isOpen: isAdmin } = useToggle(false);
-
   const { searchTerm, handleSearchTermChange, debouncedSearchTerm, filteredProducts } =
     useSearch(products);
 
-  const remainingStock = (product: ProductWithUI) => getRemainingStock({ product, cart });
-
   return (
     <div className="min-h-screen bg-gray-50">
-      <NotificationList notifications={notifications} onDismiss={addNotification} />
+      <NotificationList />
 
       <Header
         isAdmin={isAdmin}
-        searchTerm={searchTerm}
-        onSearchTermChange={handleSearchTermChange}
         toggleAdmin={toggleAdmin}
         cart={cart}
         totalItemCount={totalItemCount}
+        searchTerm={searchTerm}
+        onSearchTermChange={handleSearchTermChange}
       />
 
       <MainContent
         isAdmin={isAdmin}
-        products={products}
-        remainingStock={remainingStock}
         filteredProducts={filteredProducts}
         debouncedSearchTerm={debouncedSearchTerm}
+        products={products}
         cart={cart}
         coupons={coupons}
         selectedCoupon={selectedCoupon}
         cartTotalPrice={cartTotalPrice}
-        addProduct={addProduct}
-        updateProduct={updateProduct}
         addCoupon={addCoupon}
-        deleteProduct={deleteProduct}
         deleteCoupon={deleteCoupon}
         addToCart={addToCart}
         removeCartItem={removeCartItem}
@@ -72,7 +62,6 @@ export default function App() {
         updateQuantity={updateQuantity}
         handleChangeCoupon={handleChangeCoupon}
         completeOrder={completeOrder}
-        addNotification={addNotification}
       />
     </div>
   );
@@ -80,20 +69,20 @@ export default function App() {
 
 interface HeaderProps {
   isAdmin: boolean;
-  searchTerm: string;
-  onSearchTermChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   toggleAdmin: () => void;
   cart: CartItem[];
   totalItemCount: number;
+  searchTerm: string;
+  onSearchTermChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 function Header({
   isAdmin,
-  searchTerm,
-  onSearchTermChange,
   toggleAdmin,
   cart,
   totalItemCount,
+  searchTerm,
+  onSearchTermChange,
 }: HeaderProps) {
   return (
     <header className="bg-white shadow-sm sticky top-0 z-40 border-b">
@@ -158,18 +147,14 @@ function CartIcon({ cart, totalItemCount }: CartIconProps) {
 
 interface MainContentProps {
   isAdmin: boolean;
-  products: ProductWithUI[];
-  remainingStock: (product: ProductWithUI) => number;
   filteredProducts: ProductWithUI[];
   debouncedSearchTerm: string;
+  products: ProductWithUI[];
   cart: CartItem[];
   coupons: any[];
   selectedCoupon: any;
   cartTotalPrice: { totalBeforeDiscount: number; totalAfterDiscount: number };
-  addProduct: (product: Omit<ProductWithUI, 'id'>) => void;
-  updateProduct: (id: string, updates: Partial<ProductWithUI>) => void;
   addCoupon: (coupon: any) => void;
-  deleteProduct: (id: string) => void;
   deleteCoupon: (code: string) => void;
   addToCart: (params: any) => void;
   removeCartItem: (productId: string) => void;
@@ -181,62 +166,43 @@ interface MainContentProps {
     callback: () => void
   ) => void;
   completeOrder: (callback: () => void) => void;
-  addNotification: (message: string, type?: 'error' | 'success' | 'warning') => void;
 }
 
 function MainContent({
   isAdmin,
-  products,
-  remainingStock,
   filteredProducts,
   debouncedSearchTerm,
+  products,
   cart,
   coupons,
   selectedCoupon,
   cartTotalPrice,
-  addProduct,
-  updateProduct,
-  addCoupon,
-  deleteProduct,
-  deleteCoupon,
   addToCart,
   removeCartItem,
   validateUpdateQuantity,
   updateQuantity,
   handleChangeCoupon,
   completeOrder,
-  addNotification,
 }: MainContentProps) {
   return (
     <main className="max-w-7xl mx-auto px-4 py-8">
       {isAdmin ? (
-        <AdminPage
-          products={products}
-          remainingStock={remainingStock}
-          addProduct={addProduct}
-          updateProduct={updateProduct}
-          addCoupon={addCoupon}
-          onDeleteProduct={deleteProduct}
-          onDeleteCoupon={deleteCoupon}
-          onAddNotification={addNotification}
-          coupons={coupons}
-        />
+        <AdminPage />
       ) : (
         <CartPage
           products={products}
           filteredProducts={filteredProducts}
           debouncedSearchTerm={debouncedSearchTerm}
           cart={cart}
-          onAddNotification={addNotification}
           addToCart={addToCart}
           removeCartItem={removeCartItem}
           validateUpdateQuantity={validateUpdateQuantity}
           onUpdateQuantity={updateQuantity}
+          coupons={coupons}
           selectedCoupon={selectedCoupon}
           handleChangeCoupon={handleChangeCoupon}
-          cartTotalPrice={cartTotalPrice}
           completeOrder={completeOrder}
-          coupons={coupons}
+          cartTotalPrice={cartTotalPrice}
         />
       )}
     </main>

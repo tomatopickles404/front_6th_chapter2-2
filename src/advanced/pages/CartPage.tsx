@@ -3,7 +3,6 @@ import { ProductGrid, CartList } from '../components';
 import { EmptyState } from '../components/common';
 import { commaizedNumberWithUnit } from '../../shared/utils/commaizedNumber';
 import { UpdateQuantityResult } from '../utils/cart';
-import { useNotification } from '../hooks';
 
 interface CartPageProps {
   // Product related props
@@ -41,6 +40,9 @@ interface CartPageProps {
   // Order related props
   completeOrder: (callback: () => void) => void;
   cartTotalPrice: { totalBeforeDiscount: number; totalAfterDiscount: number };
+
+  // Notification related props
+  onAddNotification: (message: string, type?: 'error' | 'success' | 'warning') => void;
 }
 
 export function CartPage({
@@ -57,9 +59,8 @@ export function CartPage({
   handleChangeCoupon,
   completeOrder,
   cartTotalPrice,
+  onAddNotification,
 }: CartPageProps) {
-  const { addNotification } = useNotification();
-
   const remainingStock = (product: ProductWithUI) => {
     const cartItem = cart.find((item) => item.product.id === product.id);
     return product.stock - (cartItem?.quantity || 0);
@@ -73,7 +74,7 @@ export function CartPage({
         return result.isValid;
       },
     });
-    addNotification('장바구니에 담았습니다', 'success');
+    onAddNotification('장바구니에 담았습니다', 'success');
   };
 
   return (
@@ -94,8 +95,8 @@ export function CartPage({
         cartTotalPrice={cartTotalPrice}
         onRemoveItem={removeCartItem}
         onUpdateQuantity={onUpdateQuantity}
-        onQuantityError={(message) => addNotification(message, 'error')}
-        onAddNotification={addNotification}
+        onQuantityError={(message) => onAddNotification(message, 'error')}
+        onAddNotification={onAddNotification}
         handleChangeCoupon={handleChangeCoupon}
         completeOrder={completeOrder}
       />
@@ -286,7 +287,7 @@ function CouponSection({
   return (
     <section className="bg-white rounded-lg border border-gray-200 p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text_sm font-semibold text-gray-700">쿠폰 할인</h3>
+        <h3 className="text-sm font-semibold text-gray-700">쿠폰 할인</h3>
         <button className="text-xs text-blue-600 hover:underline">쿠폰 등록</button>
       </div>
       {coupons.length > 0 && (
@@ -333,7 +334,7 @@ function OrderSection({ cartTotalPrice, onAddNotification, completeOrder }: Orde
           <span className="font-medium">{commaizedNumberWithUnit(totalBeforeDiscount, '원')}</span>
         </div>
         {totalBeforeDiscount - totalAfterDiscount > 0 && (
-          <div className="flex justify_between text-red-500">
+          <div className="flex justify-between text-red-500">
             <span>할인 금액</span>
             <span>
               {`-${commaizedNumberWithUnit(totalBeforeDiscount - totalAfterDiscount, '원')}`}

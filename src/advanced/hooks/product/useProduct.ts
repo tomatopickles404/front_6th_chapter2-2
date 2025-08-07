@@ -1,6 +1,5 @@
 import { CartItem, ProductWithUI } from '../../../types';
-import { useLocalStorage } from '../../../shared/hooks/useLocalStorage';
-import { useNotification } from '../notification/useNotification';
+import { atom, useAtom } from 'jotai';
 
 // 초기 데이터
 const initialProducts: ProductWithUI[] = [
@@ -37,6 +36,12 @@ const initialProducts: ProductWithUI[] = [
   },
 ];
 
+type Notification = {
+  id: string;
+  message: string;
+  type: 'error' | 'success' | 'warning';
+};
+
 const getRemainingStock = ({
   product,
   cart,
@@ -47,9 +52,10 @@ const getRemainingStock = ({
   return product.stock - (cart.find((item) => item.product.id === product.id)?.quantity ?? 0);
 };
 
-export function useProduct() {
-  const [products, setProducts] = useLocalStorage<ProductWithUI[]>('products', initialProducts);
-  const { addNotification } = useNotification();
+const productsAtom = atom<ProductWithUI[]>(initialProducts);
+
+export function useProduct(addNotification: (message: string, type: Notification['type']) => void) {
+  const [products, setProducts] = useAtom(productsAtom);
 
   const addProduct = (newProduct: Omit<ProductWithUI, 'id'>) => {
     const product: ProductWithUI = {

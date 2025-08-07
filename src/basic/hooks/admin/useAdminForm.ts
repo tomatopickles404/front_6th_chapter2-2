@@ -59,6 +59,22 @@ export function useAdminForm({
   const handleProductSubmit = (e: React.FormEvent): { success: boolean; message?: string } => {
     e.preventDefault();
 
+    // Validate all fields before submit
+    const priceValidation = validateProductForm('price', productForm.price);
+    if (!priceValidation.isValid) {
+      return { success: false, message: priceValidation.message };
+    }
+
+    const stockValidation = validateProductForm('stock', productForm.stock);
+    if (!stockValidation.isValid) {
+      return { success: false, message: stockValidation.message };
+    }
+
+    // Check required fields
+    if (!productForm.name.trim()) {
+      return { success: false, message: '상품명을 입력해주세요.' };
+    }
+
     try {
       if (editingProduct && editingProduct !== 'new') {
         updateProduct(editingProduct, productForm);
@@ -115,6 +131,21 @@ export function useAdminForm({
   const handleCouponSubmit = (e: React.FormEvent): { success: boolean; message?: string } => {
     e.preventDefault();
 
+    // Validate coupon form before submit
+    const discountValidation = validateCouponForm('discountValue', couponForm.discountValue);
+    if (!discountValidation.isValid) {
+      return { success: false, message: discountValidation.message };
+    }
+
+    // Check required fields
+    if (!couponForm.name.trim()) {
+      return { success: false, message: '쿠폰명을 입력해주세요.' };
+    }
+
+    if (!couponForm.code.trim()) {
+      return { success: false, message: '쿠폰 코드를 입력해주세요.' };
+    }
+
     try {
       const newCoupon = couponForm as Coupon;
       addCoupon(newCoupon);
@@ -159,7 +190,7 @@ export function useAdminForm({
     if (field === 'discountValue') {
       if (couponForm.discountType === 'percentage') {
         if (value > 100) {
-          return { isValid: false, message: formatExceedErrorMessage('할인율', 100) };
+          return { isValid: false, message: '할인율은 100%를 초과할 수 없습니다' };
         }
       } else {
         if (value > 100000) {

@@ -62,7 +62,8 @@ export default function App() {
     validateProductForm,
     validateCouponForm,
   } = useAdminForm({ addProduct, updateProduct, addCoupon });
-
+  const { searchTerm, handleSearchTermChange, debouncedSearchTerm, filteredProducts, resetSearch } =
+    useSearch(products);
   const { totalBeforeDiscount, totalAfterDiscount } = cartTotalPrice;
 
   const getRemainingStock = (product: Product): number => {
@@ -79,9 +80,6 @@ export default function App() {
     }
     return true;
   };
-
-  const { searchTerm, handleSearchTermChange, debouncedSearchTerm, filteredProducts, resetSearch } =
-    useSearch(products);
 
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -401,9 +399,13 @@ export default function App() {
                               const value = e.target.value;
                               if (value === '') {
                                 handleProductFormChange({ ...productForm, price: 0 });
-                              } else if (parseInt(value) < 0) {
-                                addNotification('가격은 0보다 커야 합니다', 'error');
-                                handleProductFormChange({ ...productForm, price: 0 });
+                              } else {
+                                const numValue = parseInt(value);
+                                const validation = validateProductForm('price', numValue);
+                                if (!validation.isValid && validation.message) {
+                                  addNotification(validation.message, 'error');
+                                  handleProductFormChange({ ...productForm, price: 0 });
+                                }
                               }
                             }}
                             className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border"
@@ -431,12 +433,19 @@ export default function App() {
                               const value = e.target.value;
                               if (value === '') {
                                 handleProductFormChange({ ...productForm, stock: 0 });
-                              } else if (parseInt(value) < 0) {
-                                addNotification(formatErrorMessageProduct('재고', 0), 'error');
-                                handleProductFormChange({ ...productForm, stock: 0 });
-                              } else if (parseInt(value) > 9999) {
-                                addNotification(formatExceedErrorMessage('재고', 9999), 'error');
-                                handleProductFormChange({ ...productForm, stock: 9999 });
+                              } else {
+                                const numValue = parseInt(value);
+                                const validation = validateProductForm('stock', numValue);
+                                if (!validation.isValid && validation.message) {
+                                  addNotification(validation.message, 'error');
+
+                                  // Auto-correct to valid range
+                                  if (numValue < 0) {
+                                    handleProductFormChange({ ...productForm, stock: 0 });
+                                  } else if (numValue > 9999) {
+                                    handleProductFormChange({ ...productForm, stock: 9999 });
+                                  }
+                                }
                               }
                             }}
                             className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border"
@@ -705,25 +714,27 @@ export default function App() {
                               }}
                               onBlur={(e) => {
                                 const value = parseInt(e.target.value) || 0;
-                                if (couponForm.discountType === 'percentage') {
-                                  if (value > 100) {
-                                    addNotification('할인율은 100%를 초과할 수 없습니다', 'error');
-                                    handleCouponFormChange({ ...couponForm, discountValue: 100 });
-                                  } else if (value < 0) {
-                                    handleCouponFormChange({ ...couponForm, discountValue: 0 });
-                                  }
-                                } else {
-                                  if (value > 100000) {
-                                    addNotification(
-                                      '할인 금액은 100,000원을 초과할 수 없습니다',
-                                      'error'
-                                    );
-                                    handleCouponFormChange({
-                                      ...couponForm,
-                                      discountValue: 100000,
-                                    });
-                                  } else if (value < 0) {
-                                    handleCouponFormChange({ ...couponForm, discountValue: 0 });
+                                const validation = validateCouponForm('discountValue', value);
+
+                                if (!validation.isValid && validation.message) {
+                                  addNotification(validation.message, 'error');
+
+                                  // Auto-correct to max/min values
+                                  if (couponForm.discountType === 'percentage') {
+                                    if (value > 100) {
+                                      handleCouponFormChange({ ...couponForm, discountValue: 100 });
+                                    } else if (value < 0) {
+                                      handleCouponFormChange({ ...couponForm, discountValue: 0 });
+                                    }
+                                  } else {
+                                    if (value > 100000) {
+                                      handleCouponFormChange({
+                                        ...couponForm,
+                                        discountValue: 100000,
+                                      });
+                                    } else if (value < 0) {
+                                      handleCouponFormChange({ ...couponForm, discountValue: 0 });
+                                    }
                                   }
                                 }
                               }}

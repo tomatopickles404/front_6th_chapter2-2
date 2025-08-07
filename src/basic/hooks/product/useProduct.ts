@@ -1,6 +1,5 @@
 import { CartItem, ProductWithUI } from '../../../types';
 import { useLocalStorage } from '../../../shared/hooks/useLocalStorage';
-import { useNotification } from '../notification/useNotification';
 
 // 초기 데이터
 const initialProducts: ProductWithUI[] = [
@@ -47,9 +46,10 @@ const getRemainingStock = ({
   return product.stock - (cart.find((item) => item.product.id === product.id)?.quantity ?? 0);
 };
 
-export function useProduct() {
+export function useProduct(
+  addNotification: (message: string, type: 'error' | 'success' | 'warning') => void
+) {
   const [products, setProducts] = useLocalStorage<ProductWithUI[]>('products', initialProducts);
-  const { addNotification } = useNotification();
 
   const addProduct = (newProduct: Omit<ProductWithUI, 'id'>) => {
     const product: ProductWithUI = {

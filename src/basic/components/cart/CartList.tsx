@@ -49,10 +49,6 @@ function CartItemRow({
 }: CartItemRowProps) {
   const handleQuantityChange = (newQuantity: number) => {
     const result = onUpdateQuantity(item.product.id, newQuantity);
-    handleQuantityError(result);
-  };
-
-  const handleQuantityError = (result: UpdateQuantityResult) => {
     if (!result.success) {
       const errorMessage = getErrorMessage(result);
       onQuantityError(errorMessage);
@@ -61,7 +57,7 @@ function CartItemRow({
 
   const getErrorMessage = (result: UpdateQuantityResult): string => {
     if (result.success) {
-      return '수량 업데이트에 실패했습니다.';
+      return '수량 업데이트에 성공했습니다.';
     }
 
     switch (result.reason) {

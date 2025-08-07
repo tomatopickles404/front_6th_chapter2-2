@@ -22,8 +22,8 @@ export function useCart() {
     selectedCoupon,
   });
 
-  const completeOrder = (notificationMessage: () => void) => {
-    notificationMessage();
+  const completeOrder = (callback: () => void) => {
+    callback();
     resetCart();
     resetCoupons();
     resetSelectedCoupon();

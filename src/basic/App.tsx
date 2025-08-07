@@ -1,12 +1,13 @@
 import { CartItem, ProductWithUI } from '../types';
 import { SearchBar } from '../shared/components';
 import { NotificationList } from './components/notification';
-import { useCart, useSearch, useProduct } from './hooks';
+import { useCart, useSearch, useProduct, useNotification } from './hooks';
 import { useToggle } from '../shared/hooks/useToggle';
 import { AdminPage } from './pages/AdminPage';
 import { CartPage } from './pages/CartPage';
 
 export default function App() {
+  const { notifications, addNotification, removeNotification } = useNotification();
   const {
     //coupons
     coupons,
@@ -27,14 +28,21 @@ export default function App() {
     completeOrder,
   } = useCart();
 
-  const { products } = useProduct();
+  const { products, addProduct, updateProduct, deleteProduct, getRemainingStock } =
+    useProduct(addNotification);
   const { toggle: toggleAdmin, isOpen: isAdmin } = useToggle(false);
   const { searchTerm, handleSearchTermChange, debouncedSearchTerm, filteredProducts } =
     useSearch(products);
 
+  const remainingStock = (product: ProductWithUI) => getRemainingStock({ product, cart });
+
+  const handleAddNotification = (message: string, type?: 'error' | 'success' | 'warning') => {
+    addNotification(message, type || 'success');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <NotificationList />
+      <NotificationList notifications={notifications} onDismiss={removeNotification} />
 
       <Header
         isAdmin={isAdmin}
@@ -60,8 +68,14 @@ export default function App() {
         removeCartItem={removeCartItem}
         validateUpdateQuantity={validateUpdateQuantity}
         updateQuantity={updateQuantity}
-        handleChangeCoupon={handleChangeCoupon}
+        onCouponChange={handleChangeCoupon}
         completeOrder={completeOrder}
+        addProduct={addProduct}
+        updateProduct={updateProduct}
+        onDeleteProduct={deleteProduct}
+        onDeleteCoupon={deleteCoupon}
+        remainingStock={remainingStock}
+        onAddNotification={handleAddNotification}
       />
     </div>
   );
@@ -160,12 +174,18 @@ interface MainContentProps {
   removeCartItem: (productId: string) => void;
   validateUpdateQuantity: (params: any) => { isValid: boolean; message?: string };
   updateQuantity: (params: any) => any;
-  handleChangeCoupon: (
+  onCouponChange: (
     e: React.ChangeEvent<HTMLSelectElement>,
     totalAfterDiscount: number,
     callback: () => void
   ) => void;
   completeOrder: (callback: () => void) => void;
+  addProduct: (product: Omit<ProductWithUI, 'id'>) => void;
+  updateProduct: (id: string, updates: Partial<ProductWithUI>) => void;
+  onDeleteProduct: (id: string) => void;
+  onDeleteCoupon: (code: string) => void;
+  remainingStock: (product: ProductWithUI) => number;
+  onAddNotification: (message: string, type?: 'success' | 'error' | 'warning') => void;
 }
 
 function MainContent({
@@ -181,13 +201,30 @@ function MainContent({
   removeCartItem,
   validateUpdateQuantity,
   updateQuantity,
-  handleChangeCoupon,
+  onCouponChange,
   completeOrder,
+  addProduct,
+  updateProduct,
+  onDeleteProduct,
+  onDeleteCoupon,
+  remainingStock,
+  onAddNotification,
+  addCoupon,
 }: MainContentProps) {
   return (
     <main className="max-w-7xl mx-auto px-4 py-8">
       {isAdmin ? (
-        <AdminPage />
+        <AdminPage
+          addProduct={addProduct}
+          updateProduct={updateProduct}
+          addCoupon={addCoupon}
+          onDeleteProduct={onDeleteProduct}
+          onDeleteCoupon={onDeleteCoupon}
+          products={products}
+          remainingStock={remainingStock}
+          onAddNotification={onAddNotification}
+          coupons={coupons}
+        />
       ) : (
         <CartPage
           products={products}
@@ -200,9 +237,10 @@ function MainContent({
           onUpdateQuantity={updateQuantity}
           coupons={coupons}
           selectedCoupon={selectedCoupon}
-          handleChangeCoupon={handleChangeCoupon}
+          onCouponChange={onCouponChange}
           completeOrder={completeOrder}
           cartTotalPrice={cartTotalPrice}
+          onAddNotification={onAddNotification}
         />
       )}
     </main>

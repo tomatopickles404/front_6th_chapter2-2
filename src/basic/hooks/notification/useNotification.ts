@@ -18,8 +18,8 @@ export function useNotification() {
     }, 3000);
   };
 
-  const removeNotification = (id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  const removeNotification = (message: string, type?: 'error' | 'success' | 'warning') => {
+    setNotifications((prev) => prev.filter((n) => n.message !== message));
   };
 
   return {

@@ -1,15 +1,22 @@
 import { useCouponList } from '../../hooks/admin';
-import { useNotification } from '../../hooks/notification/useNotification';
-import { useCoupon } from '../../hooks/coupon/useCoupon';
 import { Coupon } from '../../../types';
 import { Button } from '../../../shared/components';
 import { commaizedNumberWithUnit } from '../../../shared/utils/commaizedNumber';
 import { CouponForm } from './CouponForm';
 
-export function CouponList() {
-  const { coupons, addCoupon, deleteCoupon: handleDeleteCoupon } = useCoupon();
-  const { addNotification: handleAddNotification } = useNotification();
+interface CouponListProps {
+  coupons: Coupon[];
+  onDeleteCoupon: (couponCode: string) => void;
+  onAddNotification: (message: string, type: 'success' | 'error' | 'warning') => void;
+  addCoupon: (coupon: Coupon) => void;
+}
 
+export function CouponList({
+  coupons,
+  onDeleteCoupon,
+  onAddNotification,
+  addCoupon,
+}: CouponListProps) {
   const {
     showCouponForm,
     couponForm,
@@ -35,8 +42,8 @@ export function CouponList() {
       <div className="p-6">
         <CouponGrid
           coupons={coupons}
-          onDeleteCoupon={handleDeleteCoupon}
-          onAddNotification={handleAddNotification}
+          onDeleteCoupon={onDeleteCoupon}
+          onAddNotification={onAddNotification}
           onToggleForm={toggleCouponForm}
         />
 
@@ -47,7 +54,7 @@ export function CouponList() {
             onFormSubmit={handleFormSubmit}
             onFormReset={resetCouponForm}
             onFormValidate={validateCouponForm}
-            onAddNotification={handleAddNotification}
+            onAddNotification={onAddNotification}
           />
         )}
       </div>

@@ -1,9 +1,9 @@
+import { ChangeEvent } from 'react';
 import { CartItem, Coupon, ProductWithUI } from '../../types';
 import { ProductGrid, CartList } from '../components';
 import { EmptyState } from '../components/common';
 import { commaizedNumberWithUnit } from '../../shared/utils/commaizedNumber';
 import { UpdateQuantityResult } from '../utils/cart';
-import { useNotification } from '../hooks';
 
 interface CartPageProps {
   // Product related props
@@ -32,8 +32,8 @@ interface CartPageProps {
   // Coupon related props
   coupons: Coupon[];
   selectedCoupon: Coupon | null;
-  handleChangeCoupon: (
-    e: React.ChangeEvent<HTMLSelectElement>,
+  onCouponChange: (
+    e: ChangeEvent<HTMLSelectElement>,
     totalAfterDiscount: number,
     callback: () => void
   ) => void;
@@ -41,6 +41,9 @@ interface CartPageProps {
   // Order related props
   completeOrder: (callback: () => void) => void;
   cartTotalPrice: { totalBeforeDiscount: number; totalAfterDiscount: number };
+
+  // Notification related props
+  onAddNotification: (message: string, type?: 'error' | 'success' | 'warning') => void;
 }
 
 export function CartPage({
@@ -54,12 +57,11 @@ export function CartPage({
   onUpdateQuantity,
   coupons,
   selectedCoupon,
-  handleChangeCoupon,
+  onCouponChange,
   completeOrder,
   cartTotalPrice,
+  onAddNotification,
 }: CartPageProps) {
-  const { addNotification } = useNotification();
-
   const remainingStock = (product: ProductWithUI) => {
     const cartItem = cart.find((item) => item.product.id === product.id);
     return product.stock - (cartItem?.quantity || 0);
@@ -73,7 +75,7 @@ export function CartPage({
         return result.isValid;
       },
     });
-    addNotification('장바구니에 담았습니다', 'success');
+    onAddNotification('장바구니에 담았습니다', 'success');
   };
 
   return (
@@ -94,9 +96,9 @@ export function CartPage({
         cartTotalPrice={cartTotalPrice}
         onRemoveItem={removeCartItem}
         onUpdateQuantity={onUpdateQuantity}
-        onQuantityError={(message) => addNotification(message, 'error')}
-        onAddNotification={addNotification}
-        handleChangeCoupon={handleChangeCoupon}
+        onQuantityError={(message) => onAddNotification(message, 'error')}
+        onAddNotification={onAddNotification}
+        onCouponChange={onCouponChange}
         completeOrder={completeOrder}
       />
     </div>
@@ -155,8 +157,8 @@ interface CartSidebarProps {
   }) => UpdateQuantityResult;
   onQuantityError: (message: string) => void;
   onAddNotification: (message: string, type?: 'error' | 'success' | 'warning') => void;
-  handleChangeCoupon: (
-    e: React.ChangeEvent<HTMLSelectElement>,
+  onCouponChange: (
+    e: ChangeEvent<HTMLSelectElement>,
     totalAfterDiscount: number,
     callback: () => void
   ) => void;
@@ -173,7 +175,7 @@ function CartSidebar({
   onUpdateQuantity,
   onQuantityError,
   onAddNotification,
-  handleChangeCoupon,
+  onCouponChange,
   completeOrder,
 }: CartSidebarProps) {
   const { totalAfterDiscount } = cartTotalPrice;
@@ -196,7 +198,7 @@ function CartSidebar({
               selectedCoupon={selectedCoupon}
               totalAfterDiscount={totalAfterDiscount}
               onAddNotification={onAddNotification}
-              handleChangeCoupon={handleChangeCoupon}
+              onCouponChange={onCouponChange}
             />
 
             <OrderSection
@@ -269,8 +271,8 @@ interface CouponSectionProps {
   selectedCoupon: Coupon | null;
   totalAfterDiscount: number;
   onAddNotification: (message: string, type?: 'error' | 'success' | 'warning') => void;
-  handleChangeCoupon: (
-    e: React.ChangeEvent<HTMLSelectElement>,
+  onCouponChange: (
+    e: ChangeEvent<HTMLSelectElement>,
     totalAfterDiscount: number,
     callback: () => void
   ) => void;
@@ -281,12 +283,12 @@ function CouponSection({
   selectedCoupon,
   totalAfterDiscount,
   onAddNotification,
-  handleChangeCoupon,
+  onCouponChange,
 }: CouponSectionProps) {
   return (
     <section className="bg-white rounded-lg border border-gray-200 p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text_sm font-semibold text-gray-700">쿠폰 할인</h3>
+        <h3 className="text-sm font-semibold text-gray-700">쿠폰 할인</h3>
         <button className="text-xs text-blue-600 hover:underline">쿠폰 등록</button>
       </div>
       {coupons.length > 0 && (
@@ -294,7 +296,7 @@ function CouponSection({
           className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
           value={selectedCoupon?.code || ''}
           onChange={(e) =>
-            handleChangeCoupon(e, totalAfterDiscount, () =>
+            onCouponChange(e, totalAfterDiscount, () =>
               onAddNotification('쿠폰이 적용되었습니다.', 'success')
             )
           }
@@ -333,7 +335,7 @@ function OrderSection({ cartTotalPrice, onAddNotification, completeOrder }: Orde
           <span className="font-medium">{commaizedNumberWithUnit(totalBeforeDiscount, '원')}</span>
         </div>
         {totalBeforeDiscount - totalAfterDiscount > 0 && (
-          <div className="flex justify_between text-red-500">
+          <div className="flex justify-between text-red-500">
             <span>할인 금액</span>
             <span>
               {`-${commaizedNumberWithUnit(totalBeforeDiscount - totalAfterDiscount, '원')}`}

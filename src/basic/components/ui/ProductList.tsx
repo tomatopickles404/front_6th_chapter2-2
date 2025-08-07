@@ -10,10 +10,9 @@ interface ProductListProps {
   products: ProductWithUI[];
   remainingStock: (product: ProductWithUI) => number;
   onAddToCart: (product: ProductWithUI) => void;
-  isAdmin: boolean;
 }
 
-export function ProductList({ products, remainingStock, onAddToCart, isAdmin }: ProductListProps) {
+export function ProductList({ products, remainingStock, onAddToCart }: ProductListProps) {
   if (products.length === 0) {
     return null;
   }
@@ -63,7 +62,7 @@ export function ProductList({ products, remainingStock, onAddToCart, isAdmin }: 
               {/* 가격 정보 */}
               <div className="mb-3">
                 <p className="text-lg font-bold text-gray-900">
-                  <ProductPrice product={product} isAdmin={isAdmin} remainingStock={stock} />
+                  <ProductPrice product={product} isAdmin={false} remainingStock={stock} />
                 </p>
                 <ProductDiscountInfo product={product} />
               </div>

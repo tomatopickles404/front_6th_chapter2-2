@@ -1,13 +1,7 @@
 import { useCoupon } from '../coupon/useCoupon';
 import { useCartItems } from './useCartItems';
 import { ProductWithUI } from '../../../types';
-import {
-  discountRate,
-  discountedItemTotalPrice,
-  validateUpdateQuantity,
-  getCartTotalPrice,
-  UpdateQuantityResult,
-} from '../../utils/cart';
+import { validateUpdateQuantity, getCartTotalPrice, UpdateQuantityResult } from '../../utils/cart';
 
 export function useCart() {
   const {
@@ -35,11 +29,15 @@ export function useCart() {
     resetSelectedCoupon();
   };
 
-  const updateQuantity = (
-    productId: string,
-    newQuantity: number,
-    products: ProductWithUI[]
-  ): UpdateQuantityResult => {
+  const updateQuantity = ({
+    productId,
+    newQuantity,
+    products,
+  }: {
+    productId: string;
+    newQuantity: number;
+    products: ProductWithUI[];
+  }): UpdateQuantityResult => {
     if (newQuantity <= 0) {
       removeCartItem(productId);
       return { success: true, cart: cart.filter((item) => item.product.id !== productId) };
@@ -86,9 +84,6 @@ export function useCart() {
     cartTotalPrice,
     resetCart,
 
-    // cart utilities
-    discountRate,
-    discountedItemTotalPrice,
     validateUpdateQuantity,
   };
 }

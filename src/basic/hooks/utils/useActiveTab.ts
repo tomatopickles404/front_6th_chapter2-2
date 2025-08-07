@@ -1,11 +1,11 @@
 import { useState } from 'react';
 
-type AdminTab = 'products' | 'coupons';
+type Tab = 'products' | 'coupons';
 
 export function useActiveTab() {
-  const [activeTab, setActiveTab] = useState<AdminTab>('products');
+  const [activeTab, setActiveTab] = useState<Tab>('products');
 
-  const handleSwitchTab = (tab: AdminTab) => {
+  const handleSwitchTab = (tab: Tab) => {
     setActiveTab(tab);
   };
 

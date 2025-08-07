@@ -1,12 +1,18 @@
-import { useState } from 'react';
 import { Product, ProductWithUI } from '../types';
 import {
   commaziedNumberWithCurrency,
   commaizedNumberWithUnit,
 } from '../shared/utils/commaizedNumber';
-import { formatErrorMessageProduct, formatExceedErrorMessage } from './utils/format';
 import { roundedPrice } from '../shared/utils/roundedPrice';
-import { useAdminForm, useCart, useNotification, useProduct, useSearch } from './hooks';
+import {
+  useAdminForm,
+  useCart,
+  useNotification,
+  useProduct,
+  useSearch,
+  useToggle,
+  useActiveTab,
+} from './hooks';
 
 export default function App() {
   const {
@@ -20,8 +26,8 @@ export default function App() {
     // cart
     cart,
     addToCart,
-    removeCartItem: handleRemoveCartItem,
-    updateCart,
+    removeCartItem,
+    updateQuantity,
     totalItemCount,
     cartTotalPrice,
 
@@ -32,7 +38,11 @@ export default function App() {
   } = useCart();
 
   const { notifications, addNotification } = useNotification();
-  const { products, addProduct, updateProduct, deleteProduct } = useProduct(addNotification);
+  const { products, addProduct, updateProduct, deleteProduct, getRemainingStock } =
+    useProduct(addNotification);
+
+  const { toggle: toggleAdmin, isOpen: isAdmin } = useToggle(false);
+  const { activeTab, handleSwitchTab } = useActiveTab();
 
   // ui
   const {
@@ -62,18 +72,14 @@ export default function App() {
     validateProductForm,
     validateCouponForm,
   } = useAdminForm({ addProduct, updateProduct, addCoupon });
-  const { searchTerm, handleSearchTermChange, debouncedSearchTerm, filteredProducts, resetSearch } =
+  const { searchTerm, handleSearchTermChange, debouncedSearchTerm, filteredProducts } =
     useSearch(products);
   const { totalBeforeDiscount, totalAfterDiscount } = cartTotalPrice;
 
-  const getRemainingStock = (product: Product): number => {
-    return product.stock - (cart.find((item) => item.product.id === product.id)?.quantity ?? 0);
-  };
-
-  const remainingStock = (product: Product) => getRemainingStock(product);
+  const remainingStock = (product: ProductWithUI) => getRemainingStock({ product, cart });
 
   const validateAddToCart = (product: ProductWithUI): boolean => {
-    const remainingStock = getRemainingStock(product);
+    const remainingStock = getRemainingStock({ product, cart });
     if (remainingStock <= 0) {
       addNotification('재고가 부족합니다!', 'error');
       return false;
@@ -81,36 +87,9 @@ export default function App() {
     return true;
   };
 
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  const [activeTab, setActiveTab] = useState<'products' | 'coupons'>('products');
-
   const notifyCompleteOrder = () => {
     const orderNumber = `ORD-${Date.now()}`;
     addNotification(`주문이 완료되었습니다. 주문번호: ${orderNumber}`, 'success');
-  };
-
-  // ------------------------------------------------------------
-
-  const updateQuantity = (productId: string, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      handleRemoveCartItem(productId);
-      return;
-    }
-
-    const product = products.find((p) => p.id === productId);
-    if (!product) return;
-
-    const maxStock = product.stock;
-    if (newQuantity > maxStock) {
-      addNotification(`재고는 ${maxStock}개까지만 있습니다.`, 'error');
-      return;
-    }
-
-    const updatedCart = cart.map((item) =>
-      item.product.id === productId ? { ...item, quantity: newQuantity } : item
-    );
-    updateCart(updatedCart);
   };
 
   const handleAddToCart = (product: ProductWithUI) => {
@@ -182,10 +161,7 @@ export default function App() {
             </div>
             <nav className="flex items-center space-x-4">
               <button
-                onClick={() => {
-                  setIsAdmin(!isAdmin);
-                  resetSearch();
-                }}
+                onClick={toggleAdmin}
                 className={`px-3 py-1.5 text-sm rounded transition-colors ${
                   isAdmin ? 'bg-gray-800 text-white' : 'text-gray-600 hover:text-gray-900'
                 }`}
@@ -229,7 +205,7 @@ export default function App() {
             <div className="border-b border-gray-200 mb-6">
               <nav className="-mb-px flex space-x-8">
                 <button
-                  onClick={() => setActiveTab('products')}
+                  onClick={() => handleSwitchTab('products')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                     activeTab === 'products'
                       ? 'border-gray-900 text-gray-900'
@@ -239,7 +215,7 @@ export default function App() {
                   상품 관리
                 </button>
                 <button
-                  onClick={() => setActiveTab('coupons')}
+                  onClick={() => handleSwitchTab('coupons')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                     activeTab === 'coupons'
                       ? 'border-gray-900 text-gray-900'
@@ -784,7 +760,7 @@ export default function App() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredProducts.map((product) => {
-                      const remainingStock = getRemainingStock(product);
+                      const remainingStock = getRemainingStock({ product, cart });
 
                       return (
                         <div
@@ -925,7 +901,7 @@ export default function App() {
                                 {item.product.name}
                               </h4>
                               <button
-                                onClick={() => handleRemoveCartItem(item.product.id)}
+                                onClick={() => removeCartItem(item.product.id)}
                                 className="text-gray-400 hover:text-red-500 ml-2"
                               >
                                 <svg
@@ -946,7 +922,26 @@ export default function App() {
                             <div className="flex items-center justify-between">
                               <div className="flex items-center">
                                 <button
-                                  onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                                  onClick={() => {
+                                    const result = updateQuantity(
+                                      item.product.id,
+                                      item.quantity - 1,
+                                      products
+                                    );
+                                    if (!result.success) {
+                                      switch (result.reason) {
+                                        case 'INSUFFICIENT_STOCK':
+                                          addNotification(
+                                            `재고는 ${result.maxStock}개까지만 있습니다.`,
+                                            'error'
+                                          );
+                                          break;
+                                        case 'PRODUCT_NOT_FOUND':
+                                          addNotification('상품을 찾을 수 없습니다.', 'error');
+                                          break;
+                                      }
+                                    }
+                                  }}
                                   className="w-6 h-6 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-100"
                                 >
                                   <span className="text-xs">−</span>
@@ -955,7 +950,26 @@ export default function App() {
                                   {item.quantity}
                                 </span>
                                 <button
-                                  onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                                  onClick={() => {
+                                    const result = updateQuantity(
+                                      item.product.id,
+                                      item.quantity + 1,
+                                      products
+                                    );
+                                    if (!result.success) {
+                                      switch (result.reason) {
+                                        case 'INSUFFICIENT_STOCK':
+                                          addNotification(
+                                            `재고는 ${result.maxStock}개까지만 있습니다.`,
+                                            'error'
+                                          );
+                                          break;
+                                        case 'PRODUCT_NOT_FOUND':
+                                          addNotification('상품을 찾을 수 없습니다.', 'error');
+                                          break;
+                                      }
+                                    }
+                                  }}
                                   className="w-6 h-6 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-100"
                                 >
                                   <span className="text-xs">+</span>

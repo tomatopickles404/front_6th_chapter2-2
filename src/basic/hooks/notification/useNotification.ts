@@ -18,9 +18,14 @@ export function useNotification() {
     }, 3000);
   };
 
+  const removeNotification = (id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
+
   return {
     notifications,
     addNotification,
+    removeNotification,
   };
 }
 

@@ -1,4 +1,4 @@
-import { ProductWithUI } from '../../../types';
+import { CartItem, ProductWithUI } from '../../../types';
 import { useLocalStorage } from '../utils/useLocalStorage';
 
 // 초기 데이터
@@ -42,6 +42,16 @@ type Notification = {
   type: 'error' | 'success' | 'warning';
 };
 
+const getRemainingStock = ({
+  product,
+  cart,
+}: {
+  product: ProductWithUI;
+  cart: CartItem[];
+}): number => {
+  return product.stock - (cart.find((item) => item.product.id === product.id)?.quantity ?? 0);
+};
+
 export function useProduct(addNotification: (message: string, type: Notification['type']) => void) {
   const [products, setProducts] = useLocalStorage<ProductWithUI[]>('products', initialProducts);
 
@@ -71,5 +81,6 @@ export function useProduct(addNotification: (message: string, type: Notification
     addProduct,
     updateProduct,
     deleteProduct,
+    getRemainingStock,
   };
 }

@@ -6,3 +6,6 @@ export * from './Input';
 export * from './Select';
 export * from './Button';
 export * from './Tab';
+export * from './QuantityButton';
+export * from './RemoveButton';
+export * from './QuantityDisplay';

@@ -1,6 +1,5 @@
 import { CartItem, ProductWithUI } from '../types';
 import { SearchBar } from './components/ui';
-import { Button } from '../shared/components';
 import { useCart, useNotification, useProduct, useSearch, useToggle } from './hooks';
 import { AdminPage } from './pages/AdminPage';
 import { CartPage } from './pages/CartPage';
@@ -39,34 +38,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {notifications.length > 0 && (
-        <div className="fixed top-20 right-4 z-50 space-y-2 max-w-sm">
-          {notifications.map((notif) => (
-            <div
-              key={notif.id}
-              className={`p-4 rounded-md shadow-md text-white flex justify-between items-center ${
-                notif.type === 'error'
-                  ? 'bg-red-600'
-                  : notif.type === 'warning'
-                  ? 'bg-yellow-600'
-                  : 'bg-green-600'
-              }`}
-            >
-              <span className="mr-2">{notif.message}</span>
-              <Button onClick={() => addNotification(notif.message, notif.type)}>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
+      <NotificationToast notifications={notifications} onDismiss={addNotification} />
 
       <Header
         isAdmin={isAdmin}
@@ -77,38 +49,76 @@ export default function App() {
         totalItemCount={totalItemCount}
       />
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {isAdmin ? (
-          <AdminPage
-            products={products}
-            remainingStock={remainingStock}
-            addProduct={addProduct}
-            updateProduct={updateProduct}
-            addCoupon={addCoupon}
-            onDeleteProduct={deleteProduct}
-            onDeleteCoupon={deleteCoupon}
-            onAddNotification={addNotification}
-            coupons={coupons}
-          />
-        ) : (
-          <CartPage
-            products={products}
-            filteredProducts={filteredProducts}
-            debouncedSearchTerm={debouncedSearchTerm}
-            cart={cart}
-            onAddNotification={addNotification}
-            addToCart={addToCart}
-            removeCartItem={removeCartItem}
-            validateUpdateQuantity={validateUpdateQuantity}
-            onUpdateQuantity={updateQuantity}
-            selectedCoupon={selectedCoupon}
-            handleChangeCoupon={handleChangeCoupon}
-            cartTotalPrice={cartTotalPrice}
-            completeOrder={completeOrder}
-            coupons={coupons}
-          />
-        )}
-      </main>
+      <MainContent
+        isAdmin={isAdmin}
+        products={products}
+        remainingStock={remainingStock}
+        filteredProducts={filteredProducts}
+        debouncedSearchTerm={debouncedSearchTerm}
+        cart={cart}
+        coupons={coupons}
+        selectedCoupon={selectedCoupon}
+        cartTotalPrice={cartTotalPrice}
+        addProduct={addProduct}
+        updateProduct={updateProduct}
+        addCoupon={addCoupon}
+        deleteProduct={deleteProduct}
+        deleteCoupon={deleteCoupon}
+        addToCart={addToCart}
+        removeCartItem={removeCartItem}
+        validateUpdateQuantity={validateUpdateQuantity}
+        updateQuantity={updateQuantity}
+        handleChangeCoupon={handleChangeCoupon}
+        completeOrder={completeOrder}
+        addNotification={addNotification}
+      />
+    </div>
+  );
+}
+
+interface NotificationToastProps {
+  notifications: Array<{
+    id: string;
+    message: string;
+    type: 'error' | 'success' | 'warning';
+  }>;
+  onDismiss: (message: string, type: 'error' | 'success' | 'warning') => void;
+}
+
+function NotificationToast({ notifications, onDismiss }: NotificationToastProps) {
+  if (notifications.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="fixed top-20 right-4 z-50 space-y-2 max-w-sm">
+      {notifications.map((notif) => (
+        <div
+          key={notif.id}
+          className={`p-4 rounded-md shadow-md text-white flex justify-between items-center ${
+            notif.type === 'error'
+              ? 'bg-red-600'
+              : notif.type === 'warning'
+              ? 'bg-yellow-600'
+              : 'bg-green-600'
+          }`}
+        >
+          <span className="mr-2">{notif.message}</span>
+          <button
+            onClick={() => onDismiss(notif.message, notif.type)}
+            className="text-white hover:text-gray-200"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+      ))}
     </div>
   );
 }
@@ -139,34 +149,141 @@ function Header({
             {!isAdmin && <SearchBar value={searchTerm} onChange={onSearchTermChange} />}
           </div>
           <nav className="flex items-center space-x-4">
-            <Button onClick={toggleAdmin} variant={isAdmin ? 'primary' : 'secondary'}>
-              {isAdmin ? '쇼핑몰로 돌아가기' : '관리자 페이지로'}
-            </Button>
-            {!isAdmin && (
-              <div className="relative">
-                <svg
-                  className="w-6 h-6 text-gray-700"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
-                </svg>
-                {cart.length > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {totalItemCount}
-                  </span>
-                )}
-              </div>
-            )}
+            <AdminToggleButton isAdmin={isAdmin} onToggle={toggleAdmin} />
+            {!isAdmin && <CartIcon cart={cart} totalItemCount={totalItemCount} />}
           </nav>
         </div>
       </div>
     </header>
+  );
+}
+
+interface AdminToggleButtonProps {
+  isAdmin: boolean;
+  onToggle: () => void;
+}
+
+function AdminToggleButton({ isAdmin, onToggle }: AdminToggleButtonProps) {
+  return (
+    <button
+      onClick={onToggle}
+      className={`px-3 py-1.5 text-sm rounded transition-colors ${
+        isAdmin ? 'bg-gray-800 text-white' : 'text-gray-600 hover:text-gray-900'
+      }`}
+    >
+      {isAdmin ? '쇼핑몰로 돌아가기' : '관리자 페이지로'}
+    </button>
+  );
+}
+
+interface CartIconProps {
+  cart: CartItem[];
+  totalItemCount: number;
+}
+
+function CartIcon({ cart, totalItemCount }: CartIconProps) {
+  return (
+    <div className="relative">
+      <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+        />
+      </svg>
+      {cart.length > 0 && (
+        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+          {totalItemCount}
+        </span>
+      )}
+    </div>
+  );
+}
+
+interface MainContentProps {
+  isAdmin: boolean;
+  products: ProductWithUI[];
+  remainingStock: (product: ProductWithUI) => number;
+  filteredProducts: ProductWithUI[];
+  debouncedSearchTerm: string;
+  cart: CartItem[];
+  coupons: any[];
+  selectedCoupon: any;
+  cartTotalPrice: { totalBeforeDiscount: number; totalAfterDiscount: number };
+  addProduct: (product: Omit<ProductWithUI, 'id'>) => void;
+  updateProduct: (id: string, updates: Partial<ProductWithUI>) => void;
+  addCoupon: (coupon: any) => void;
+  deleteProduct: (id: string) => void;
+  deleteCoupon: (code: string) => void;
+  addToCart: (params: any) => void;
+  removeCartItem: (productId: string) => void;
+  validateUpdateQuantity: (params: any) => { isValid: boolean; message?: string };
+  updateQuantity: (params: any) => any;
+  handleChangeCoupon: (
+    e: React.ChangeEvent<HTMLSelectElement>,
+    totalAfterDiscount: number,
+    callback: () => void
+  ) => void;
+  completeOrder: (callback: () => void) => void;
+  addNotification: (message: string, type?: 'error' | 'success' | 'warning') => void;
+}
+
+function MainContent({
+  isAdmin,
+  products,
+  remainingStock,
+  filteredProducts,
+  debouncedSearchTerm,
+  cart,
+  coupons,
+  selectedCoupon,
+  cartTotalPrice,
+  addProduct,
+  updateProduct,
+  addCoupon,
+  deleteProduct,
+  deleteCoupon,
+  addToCart,
+  removeCartItem,
+  validateUpdateQuantity,
+  updateQuantity,
+  handleChangeCoupon,
+  completeOrder,
+  addNotification,
+}: MainContentProps) {
+  return (
+    <main className="max-w-7xl mx-auto px-4 py-8">
+      {isAdmin ? (
+        <AdminPage
+          products={products}
+          remainingStock={remainingStock}
+          addProduct={addProduct}
+          updateProduct={updateProduct}
+          addCoupon={addCoupon}
+          onDeleteProduct={deleteProduct}
+          onDeleteCoupon={deleteCoupon}
+          onAddNotification={addNotification}
+          coupons={coupons}
+        />
+      ) : (
+        <CartPage
+          products={products}
+          filteredProducts={filteredProducts}
+          debouncedSearchTerm={debouncedSearchTerm}
+          cart={cart}
+          onAddNotification={addNotification}
+          addToCart={addToCart}
+          removeCartItem={removeCartItem}
+          validateUpdateQuantity={validateUpdateQuantity}
+          onUpdateQuantity={updateQuantity}
+          selectedCoupon={selectedCoupon}
+          handleChangeCoupon={handleChangeCoupon}
+          cartTotalPrice={cartTotalPrice}
+          completeOrder={completeOrder}
+          coupons={coupons}
+        />
+      )}
+    </main>
   );
 }

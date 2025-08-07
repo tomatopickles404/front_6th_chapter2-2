@@ -5,7 +5,7 @@ import {
   formatErrorMessageProduct,
   formatExceedErrorMessage,
 } from '../../utils/format';
-import { useToggle } from '../utils/useToggle';
+import { useToggle } from '../../../shared/hooks/useToggle';
 
 type ProductForm = {
   name: string;

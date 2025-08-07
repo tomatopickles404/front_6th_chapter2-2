@@ -1,6 +1,6 @@
 import { ProductWithUI } from '../../../types';
-import { useInput } from '../utils/useInput';
-import { useDebounce } from '../utils/useDebounce';
+import { useInput } from '../../../shared/hooks/useInput';
+import { useDebounce } from '../../../shared/hooks/useDebounce';
 
 const filteredProducts = (products: ProductWithUI[], debouncedSearchTerm: string) => {
   if (!debouncedSearchTerm) {

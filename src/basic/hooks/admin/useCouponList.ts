@@ -5,7 +5,7 @@ import {
   formatErrorMessageCRUD,
   formatExceedErrorMessage,
 } from '../../utils/format';
-import { useToggle } from '../utils/useToggle';
+import { useToggle } from '../../../shared/hooks/useToggle';
 
 type CouponForm = {
   name: string;

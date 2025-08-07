@@ -1,4 +1,4 @@
-import { useActiveTab } from '../hooks';
+import { useActiveTab } from '../../shared/hooks';
 import { Coupon, ProductWithUI } from '../../types';
 import { Tab } from '../../shared/components';
 import { ProductList } from '../components/product';

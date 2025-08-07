@@ -1,5 +1,5 @@
 import { CartItem, ProductWithUI } from '../../../types';
-import { useLocalStorage } from '../utils/useLocalStorage';
+import { useLocalStorage } from '../../../shared/hooks/useLocalStorage';
 
 export function useCartItems() {
   const [cart, setCart] = useLocalStorage<CartItem[]>('cart', []);

@@ -1,5 +1,5 @@
 import { CartItem, ProductWithUI } from '../../../types';
-import { useLocalStorage } from '../utils/useLocalStorage';
+import { useLocalStorage } from '../../../shared/hooks/useLocalStorage';
 
 // 초기 데이터
 const initialProducts: ProductWithUI[] = [

@@ -2,7 +2,7 @@ import { Notification } from '../../../types';
 
 interface NotificationListProps {
   notifications: Notification[];
-  onDismiss: (message: string, type?: 'error' | 'success' | 'warning') => void;
+  onDismiss: (id: string) => void;
 }
 
 export function NotificationList({ notifications, onDismiss }: NotificationListProps) {
@@ -24,10 +24,7 @@ export function NotificationList({ notifications, onDismiss }: NotificationListP
           }`}
         >
           <span className="mr-2">{notif.message}</span>
-          <button
-            onClick={() => onDismiss(notif.message, notif.type)}
-            className="text-white hover:text-gray-200"
-          >
+          <button onClick={() => onDismiss(notif.id)} className="text-white hover:text-gray-200">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"

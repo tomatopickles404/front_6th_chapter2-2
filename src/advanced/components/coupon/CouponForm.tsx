@@ -1,61 +1,49 @@
 import { Button } from '../../../shared/components';
-
-interface CouponFormData {
-  name: string;
-  code: string;
-  discountType: 'amount' | 'percentage';
-  discountValue: number;
-}
+import { useCouponList } from '../../hooks/admin';
+import { ChangeEvent, FocusEvent } from 'react';
 
 interface CouponFormProps {
-  couponForm: CouponFormData;
-  onFormChange: (form: CouponFormData) => void;
-  onFormSubmit: (e: React.FormEvent) => void;
-  onFormReset: () => void;
-  onFormValidate: (
-    field: keyof CouponFormData,
-    value: any
-  ) => { isValid: boolean; message?: string };
-  onAddNotification: (message: string, type: 'success' | 'error' | 'warning') => void;
+  addNotification: (message: string, type?: 'error' | 'success' | 'warning') => void;
 }
 
-export function CouponForm({
-  couponForm,
-  onFormChange,
-  onFormSubmit,
-  onFormReset,
-  onFormValidate,
-  onAddNotification,
-}: CouponFormProps) {
-  const handleDiscountValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+export function CouponForm({ addNotification }: CouponFormProps) {
+  const {
+    couponForm,
+    handleCouponFormChange,
+    handleFormSubmit,
+    validateCouponForm,
+    resetCouponForm: handleResetCouponForm,
+  } = useCouponList();
+
+  const handleDiscountValueChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (value === '' || /^\d+$/.test(value)) {
-      onFormChange({
+      handleCouponFormChange({
         ...couponForm,
         discountValue: value === '' ? 0 : parseInt(value),
       });
     }
   };
 
-  const handleDiscountValueBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+  const handleDiscountValueBlur = (e: FocusEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value) || 0;
-    const validation = onFormValidate('discountValue', value);
+    const validation = validateCouponForm('discountValue', value);
 
     if (!validation.isValid && validation.message) {
-      onAddNotification(validation.message, 'error');
+      addNotification(validation.message, 'error');
 
       // Auto-correct to max/min values
       if (couponForm.discountType === 'percentage') {
         if (value > 100) {
-          onFormChange({ ...couponForm, discountValue: 100 });
+          handleCouponFormChange({ ...couponForm, discountValue: 100 });
         } else if (value < 0) {
-          onFormChange({ ...couponForm, discountValue: 0 });
+          handleCouponFormChange({ ...couponForm, discountValue: 0 });
         }
       } else {
         if (value > 100000) {
-          onFormChange({ ...couponForm, discountValue: 100000 });
+          handleCouponFormChange({ ...couponForm, discountValue: 100000 });
         } else if (value < 0) {
-          onFormChange({ ...couponForm, discountValue: 0 });
+          handleCouponFormChange({ ...couponForm, discountValue: 0 });
         }
       }
     }
@@ -63,7 +51,7 @@ export function CouponForm({
 
   return (
     <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-      <form onSubmit={onFormSubmit} className="space-y-4">
+      <form onSubmit={handleFormSubmit} className="space-y-4">
         <h3 className="text-md font-medium text-gray-900">새 쿠폰 생성</h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div>
@@ -71,7 +59,7 @@ export function CouponForm({
             <input
               type="text"
               value={couponForm.name}
-              onChange={(e) => onFormChange({ ...couponForm, name: e.target.value })}
+              onChange={(e) => handleCouponFormChange({ ...couponForm, name: e.target.value })}
               className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border text-sm"
               placeholder="신규 가입 쿠폰"
               required
@@ -83,7 +71,7 @@ export function CouponForm({
               type="text"
               value={couponForm.code}
               onChange={(e) =>
-                onFormChange({
+                handleCouponFormChange({
                   ...couponForm,
                   code: e.target.value.toUpperCase(),
                 })
@@ -98,7 +86,7 @@ export function CouponForm({
             <select
               value={couponForm.discountType}
               onChange={(e) =>
-                onFormChange({
+                handleCouponFormChange({
                   ...couponForm,
                   discountType: e.target.value as 'amount' | 'percentage',
                 })
@@ -125,7 +113,7 @@ export function CouponForm({
           </div>
         </div>
         <div className="flex justify-end gap-3">
-          <Button type="button" onClick={onFormReset} variant="secondary">
+          <Button type="button" onClick={handleResetCouponForm} variant="secondary">
             취소
           </Button>
           <Button type="submit" variant="primary">

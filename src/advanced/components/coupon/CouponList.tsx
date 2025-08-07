@@ -3,36 +3,14 @@ import { Coupon } from '../../../types';
 import { Button } from '../../../shared/components';
 import { commaizedNumberWithUnit } from '../../../shared/utils/commaizedNumber';
 import { CouponForm } from './CouponForm';
+import { useCoupon } from '../../hooks/coupon/useCoupon';
 
 interface CouponListProps {
-  coupons: Coupon[];
-  onDeleteCoupon: (couponCode: string) => void;
-  onAddNotification: (message: string, type: 'success' | 'error' | 'warning') => void;
-  addCoupon: (coupon: Coupon) => void;
+  addNotification: (message: string, type?: 'error' | 'success' | 'warning') => void;
 }
 
-export function CouponList({
-  coupons,
-  onDeleteCoupon,
-  onAddNotification,
-  addCoupon,
-}: CouponListProps) {
-  const {
-    showCouponForm,
-    couponForm,
-    handleCouponSubmit,
-    handleCouponFormChange,
-    validateCouponForm,
-    resetCouponForm,
-    toggleCouponForm,
-  } = useCouponList({ addCoupon });
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    const result = handleCouponSubmit(e);
-    if (result.success) {
-      resetCouponForm();
-    }
-  };
+export function CouponList({ addNotification }: CouponListProps) {
+  const { showCouponForm, toggleCouponForm } = useCouponList();
 
   return (
     <section className="bg-white rounded-lg border border-gray-200">
@@ -40,44 +18,30 @@ export function CouponList({
         <h2 className="text-lg font-semibold">쿠폰 관리</h2>
       </div>
       <div className="p-6">
-        <CouponGrid
-          coupons={coupons}
-          onDeleteCoupon={onDeleteCoupon}
-          onAddNotification={onAddNotification}
-          onToggleForm={toggleCouponForm}
-        />
+        <CouponGrid onToggleForm={toggleCouponForm} addNotification={addNotification} />
 
-        {showCouponForm && (
-          <CouponForm
-            couponForm={couponForm}
-            onFormChange={handleCouponFormChange}
-            onFormSubmit={handleFormSubmit}
-            onFormReset={resetCouponForm}
-            onFormValidate={validateCouponForm}
-            onAddNotification={onAddNotification}
-          />
-        )}
+        {showCouponForm && <CouponForm addNotification={addNotification} />}
       </div>
     </section>
   );
 }
 
 interface CouponGridProps {
-  coupons: Coupon[];
-  onDeleteCoupon: (couponCode: string) => void;
-  onAddNotification: (message: string, type: 'success' | 'error' | 'warning') => void;
   onToggleForm: () => void;
+  addNotification: (message: string, type?: 'error' | 'success' | 'warning') => void;
 }
 
-function CouponGrid({ coupons, onDeleteCoupon, onAddNotification, onToggleForm }: CouponGridProps) {
+function CouponGrid({ onToggleForm, addNotification }: CouponGridProps) {
+  const { coupons, deleteCoupon: handleDeleteCoupon } = useCoupon();
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {coupons.map((coupon) => (
         <CouponCard
           key={coupon.code}
           coupon={coupon}
-          onDelete={onDeleteCoupon}
-          onAddNotification={onAddNotification}
+          onDelete={handleDeleteCoupon}
+          onAddNotification={addNotification}
         />
       ))}
       <AddCouponButton onClick={onToggleForm} />

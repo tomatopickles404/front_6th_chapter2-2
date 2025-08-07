@@ -6,6 +6,7 @@ import {
   formatExceedErrorMessage,
 } from '../../utils/format';
 import { useToggle } from '../../../shared/hooks/useToggle';
+import { useCoupon } from '../coupon/useCoupon';
 
 type CouponForm = {
   name: string;
@@ -19,7 +20,8 @@ type ValidationResult = {
   message?: string;
 };
 
-export function useCouponList({ addCoupon }: { addCoupon: (coupon: Coupon) => void }) {
+export function useCouponList() {
+  const { addCoupon } = useCoupon();
   const { isOpen: showCouponForm, toggle: toggleCouponForm } = useToggle(false);
 
   const [couponForm, setCouponForm] = useState<CouponForm>({
@@ -32,7 +34,6 @@ export function useCouponList({ addCoupon }: { addCoupon: (coupon: Coupon) => vo
   const handleCouponSubmit = (e: React.FormEvent): { success: boolean; message?: string } => {
     e.preventDefault();
 
-    // Validate coupon form before submit
     const discountValidation = validateCouponForm('discountValue', couponForm.discountValue);
     if (!discountValidation.isValid) {
       return { success: false, message: discountValidation.message };
@@ -89,6 +90,13 @@ export function useCouponList({ addCoupon }: { addCoupon: (coupon: Coupon) => vo
     setCouponForm((prev) => ({ ...prev, ...updates }));
   };
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+    const result = handleCouponSubmit(e);
+    if (result.success) {
+      resetCouponForm();
+    }
+  };
+
   return {
     // Coupon form state
     showCouponForm,
@@ -99,6 +107,7 @@ export function useCouponList({ addCoupon }: { addCoupon: (coupon: Coupon) => vo
     // Coupon form handlers
     handleCouponSubmit,
     handleCouponFormChange,
+    handleFormSubmit,
 
     // Validation
     validateCouponForm,

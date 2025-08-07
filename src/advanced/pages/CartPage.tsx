@@ -2,65 +2,24 @@ import { CartItem, Coupon, ProductWithUI } from '../../types';
 import { ProductGrid, CartList } from '../components';
 import { EmptyState } from '../components/common';
 import { commaizedNumberWithUnit } from '../../shared/utils/commaizedNumber';
-import { UpdateQuantityResult } from '../utils/cart';
+import { UpdateQuantityResult, validateUpdateQuantity } from '../utils/cart';
+import { useCart, useProduct } from '../hooks';
 
 interface CartPageProps {
-  // Product related props
-  products: ProductWithUI[];
+  // Product related props from App (search state)
   filteredProducts: ProductWithUI[];
   debouncedSearchTerm: string;
-
-  // Cart related props
-  cart: CartItem[];
-  addToCart: (params: {
-    product: ProductWithUI;
-    validateUpdateQuantity: (params: any) => boolean;
-  }) => void;
-  removeCartItem: (productId: string) => void;
-  validateUpdateQuantity: (params: any) => { isValid: boolean; message?: string };
-  onUpdateQuantity: ({
-    productId,
-    newQuantity,
-    products,
-  }: {
-    productId: string;
-    newQuantity: number;
-    products: ProductWithUI[];
-  }) => UpdateQuantityResult;
-
-  // Coupon related props
-  coupons: Coupon[];
-  selectedCoupon: Coupon | null;
-  handleChangeCoupon: (
-    e: React.ChangeEvent<HTMLSelectElement>,
-    totalAfterDiscount: number,
-    callback: () => void
-  ) => void;
-
-  // Order related props
-  completeOrder: (callback: () => void) => void;
-  cartTotalPrice: { totalBeforeDiscount: number; totalAfterDiscount: number };
-
-  // Notification related props
-  onAddNotification: (message: string, type?: 'error' | 'success' | 'warning') => void;
+  addNotification: (message: string, type?: 'error' | 'success' | 'warning') => void;
 }
 
 export function CartPage({
-  products,
   filteredProducts,
   debouncedSearchTerm,
-  cart,
-  addToCart,
-  removeCartItem,
-  validateUpdateQuantity,
-  onUpdateQuantity,
-  coupons,
-  selectedCoupon,
-  handleChangeCoupon,
-  completeOrder,
-  cartTotalPrice,
-  onAddNotification,
+  addNotification,
 }: CartPageProps) {
+  const { cart, addToCart } = useCart();
+  const { products } = useProduct();
+
   const remainingStock = (product: ProductWithUI) => {
     const cartItem = cart.find((item) => item.product.id === product.id);
     return product.stock - (cartItem?.quantity || 0);
@@ -74,13 +33,13 @@ export function CartPage({
         return result.isValid;
       },
     });
-    onAddNotification('장바구니에 담았습니다', 'success');
+    addNotification('장바구니에 담았습니다', 'success');
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       <ProductSection
-        products={products}
+        productsCount={products.length}
         filteredProducts={filteredProducts}
         debouncedSearchTerm={debouncedSearchTerm}
         remainingStock={remainingStock}
@@ -90,22 +49,15 @@ export function CartPage({
       <CartSidebar
         cart={cart}
         products={products}
-        coupons={coupons}
-        selectedCoupon={selectedCoupon}
-        cartTotalPrice={cartTotalPrice}
-        onRemoveItem={removeCartItem}
-        onUpdateQuantity={onUpdateQuantity}
-        onQuantityError={(message) => onAddNotification(message, 'error')}
-        onAddNotification={onAddNotification}
-        handleChangeCoupon={handleChangeCoupon}
-        completeOrder={completeOrder}
+        onQuantityError={(message) => addNotification(message, 'error')}
+        onAddNotification={addNotification}
       />
     </div>
   );
 }
 
 interface ProductSectionProps {
-  products: ProductWithUI[];
+  productsCount: number;
   filteredProducts: ProductWithUI[];
   debouncedSearchTerm: string;
   remainingStock: (product: ProductWithUI) => number;
@@ -113,7 +65,7 @@ interface ProductSectionProps {
 }
 
 function ProductSection({
-  products,
+  productsCount,
   filteredProducts,
   debouncedSearchTerm,
   remainingStock,
@@ -123,7 +75,7 @@ function ProductSection({
     <section className="lg:col-span-3">
       <div className="mb-6 flex justify-between items-center">
         <h2 className="text-2xl font-semibold text-gray-800">전체 상품</h2>
-        <div className="text-sm text-gray-600">총 {products.length}개 상품</div>
+        <div className="text-sm text-gray-600">총 {productsCount}개 상품</div>
       </div>
       {filteredProducts.length === 0 ? (
         <EmptyState type="search" searchTerm={debouncedSearchTerm} />
@@ -141,42 +93,21 @@ function ProductSection({
 interface CartSidebarProps {
   cart: CartItem[];
   products: ProductWithUI[];
-  coupons: Coupon[];
-  selectedCoupon: Coupon | null;
-  cartTotalPrice: { totalBeforeDiscount: number; totalAfterDiscount: number };
-  onRemoveItem: (productId: string) => void;
-  onUpdateQuantity: ({
-    productId,
-    newQuantity,
-    products,
-  }: {
-    productId: string;
-    newQuantity: number;
-    products: ProductWithUI[];
-  }) => UpdateQuantityResult;
   onQuantityError: (message: string) => void;
   onAddNotification: (message: string, type?: 'error' | 'success' | 'warning') => void;
-  handleChangeCoupon: (
-    e: React.ChangeEvent<HTMLSelectElement>,
-    totalAfterDiscount: number,
-    callback: () => void
-  ) => void;
-  completeOrder: (callback: () => void) => void;
 }
 
-function CartSidebar({
-  cart,
-  products,
-  coupons,
-  selectedCoupon,
-  cartTotalPrice,
-  onRemoveItem,
-  onUpdateQuantity,
-  onQuantityError,
-  onAddNotification,
-  handleChangeCoupon,
-  completeOrder,
-}: CartSidebarProps) {
+function CartSidebar({ cart, products, onQuantityError, onAddNotification }: CartSidebarProps) {
+  const {
+    removeCartItem,
+    updateQuantity,
+    handleChangeCoupon,
+    completeOrder,
+    cartTotalPrice,
+    coupons,
+    selectedCoupon,
+  } = useCart();
+
   const { totalAfterDiscount } = cartTotalPrice;
 
   return (
@@ -185,8 +116,10 @@ function CartSidebar({
         <CartSection
           cart={cart}
           products={products}
-          onRemoveItem={onRemoveItem}
-          onUpdateQuantity={onUpdateQuantity}
+          onRemoveItem={removeCartItem}
+          onUpdateQuantity={({ productId, newQuantity, products }): UpdateQuantityResult =>
+            updateQuantity({ productId, newQuantity, products })
+          }
           onQuantityError={onQuantityError}
         />
 
@@ -352,8 +285,7 @@ function OrderSection({ cartTotalPrice, onAddNotification, completeOrder }: Orde
       <button
         onClick={() => {
           const notifyCompleteOrder = () => {
-            const orderNumber = `ORD-${Date.now()}`;
-            onAddNotification(`주문이 완료되었습니다. 주문번호: ${orderNumber}`, 'success');
+            onAddNotification('주문이 완료되었습니다.', 'success');
           };
           completeOrder(notifyCompleteOrder);
         }}

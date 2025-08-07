@@ -1,32 +1,13 @@
 import { useActiveTab } from '../../shared/hooks';
-import { Coupon, ProductWithUI } from '../../types';
 import { Tab } from '../../shared/components';
 import { ProductList } from '../components/product';
 import { CouponList } from '../components/coupon';
 
 interface AdminPageProps {
-  addProduct: (product: Omit<ProductWithUI, 'id'>) => void;
-  updateProduct: (id: string, updates: Partial<ProductWithUI>) => void;
-  addCoupon: (coupon: Omit<Coupon, 'id'>) => void;
-  onDeleteProduct: (id: string) => void;
-  onDeleteCoupon: (code: string) => void;
-  coupons: Coupon[];
-  products: ProductWithUI[];
-  remainingStock: (product: ProductWithUI) => number;
-  onAddNotification: (message: string, type: 'success' | 'error' | 'warning') => void;
+  addNotification: (message: string, type?: 'error' | 'success' | 'warning') => void;
 }
 
-export function AdminPage({
-  addProduct,
-  updateProduct,
-  addCoupon,
-  onDeleteProduct,
-  onDeleteCoupon,
-  products,
-  remainingStock,
-  onAddNotification,
-  coupons,
-}: AdminPageProps) {
+export function AdminPage({ addNotification }: AdminPageProps) {
   const { activeTab, handleSwitchTab } = useActiveTab();
 
   return (
@@ -36,22 +17,9 @@ export function AdminPage({
       <Tab activeTab={activeTab} onSwitchTab={handleSwitchTab} />
 
       {activeTab === 'products' ? (
-        <ProductList
-          products={products}
-          remainingStock={remainingStock}
-          addProduct={addProduct}
-          updateProduct={updateProduct}
-          onDeleteProduct={onDeleteProduct}
-          onAddNotification={onAddNotification}
-          isAdmin={true}
-        />
+        <ProductList addNotification={addNotification} />
       ) : (
-        <CouponList
-          coupons={coupons}
-          addCoupon={addCoupon}
-          onDeleteCoupon={onDeleteCoupon}
-          onAddNotification={onAddNotification}
-        />
+        <CouponList addNotification={addNotification} />
       )}
     </div>
   );

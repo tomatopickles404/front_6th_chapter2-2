@@ -15,7 +15,7 @@ export function useCart() {
     resetCoupons,
   } = useCoupon();
 
-  const { cart, updateCart, addToCart, removeCartItem, totalItemCount } = useCartItems();
+  const { cart, updateCart, addToCart, removeCartItem, totalItemCount, resetCart } = useCartItems();
 
   const cartTotalPrice = getCartTotalPrice({
     cart,
@@ -24,6 +24,7 @@ export function useCart() {
 
   const completeOrder = (notificationMessage: () => void) => {
     notificationMessage();
+    resetCart();
     resetCoupons();
     resetSelectedCoupon();
   };

@@ -1,6 +1,7 @@
-import { useCoupon } from './useCoupon';
+import { useCoupon } from '../coupon/useCoupon';
 import { useCartItems } from './useCartItems';
-import { CartItem, Coupon } from '../../types';
+import { CartItem, Coupon, ProductWithUI } from '../../../types';
+import { roundedPrice } from '../../../shared/utils/roundedPrice';
 
 const getProductDiscountRate = (item: CartItem): number => {
   const { discounts } = item.product;
@@ -63,6 +64,17 @@ const getCartTotalPrice = ({
   return calculateCartTotal(cart, selectedCoupon);
 };
 
+const discountRate = ({ item, cart }: { item: CartItem; cart: CartItem[] }): number => {
+  const discountedItemTotalPriceValue = getProductDiscountedPrice(item, cart);
+  const originalPrice = item.product.price * item.quantity;
+  const hasDiscount = discountedItemTotalPriceValue < originalPrice;
+  return hasDiscount ? roundedPrice((1 - discountedItemTotalPriceValue / originalPrice) * 100) : 0;
+};
+
+const discountedItemTotalPrice = ({ item, cart }: { item: CartItem; cart: CartItem[] }) => {
+  return getProductDiscountedPrice(item, cart);
+};
+
 export function useCart() {
   const {
     coupons,
@@ -89,6 +101,20 @@ export function useCart() {
     resetSelectedCoupon();
   };
 
+  const validateUpdateQuantity = ({
+    product,
+    newQuantity,
+  }: {
+    product: ProductWithUI;
+    newQuantity: number;
+  }) => {
+    // 재고보다 많을때
+    if (newQuantity > product.stock) {
+      return { isValid: false, message: `재고는 ${product.stock}개까지만 있습니다.` };
+    }
+    return { isValid: true };
+  };
+
   return {
     //coupons
     coupons,
@@ -110,5 +136,10 @@ export function useCart() {
     totalItemCount,
     cartTotalPrice,
     resetCart,
+
+    // cart utilities
+    discountRate,
+    discountedItemTotalPrice,
+    validateUpdateQuantity,
   };
 }

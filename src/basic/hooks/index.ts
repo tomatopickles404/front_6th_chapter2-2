@@ -1,6 +1,10 @@
-export * from './useCart';
-export * from './useCoupon';
-export * from './useLocalStorage';
-export * from './useCartItems';
-export * from './useNotification';
-export * from './useProduct';
+// Domain-specific hooks
+export * from './product';
+export * from './cart';
+export * from './coupon';
+export * from './admin';
+export * from './search';
+export * from './notification';
+
+// Utility hooks
+export * from './utils';

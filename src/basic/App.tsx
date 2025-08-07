@@ -1,44 +1,14 @@
-import { useState, useEffect } from 'react';
-import { CartItem, Coupon, Product, ProductWithUI } from '../types';
+import { useState } from 'react';
+import { Product, ProductWithUI } from '../types';
 import {
-  commaizedNumberWithCurrencyUnit,
+  commaziedNumberWithCurrency,
   commaizedNumberWithUnit,
 } from '../shared/utils/commaizedNumber';
+import { formatErrorMessageProduct, formatExceedErrorMessage } from './utils/format';
 import { roundedPrice } from '../shared/utils/roundedPrice';
-import { useCart, useNotification, useProduct } from './hooks';
+import { useAdminForm, useCart, useNotification, useProduct, useSearch } from './hooks';
 
-// 기존 함수는 calculateItemTotal을 사용하도록 수정
-const getDiscountedItemTotalPrice = (item: CartItem, cart: CartItem[]): number => {
-  return calculateItemTotal(item, cart);
-};
-
-const calculateItemTotal = (item: CartItem, cart: CartItem[]): number => {
-  const { price } = item.product;
-  const { quantity } = item;
-  const discount = getMaxApplicableDiscount(item, cart);
-
-  return Math.round(price * quantity * (1 - discount));
-};
-
-const getMaxApplicableDiscount = (item: CartItem, cart: CartItem[]): number => {
-  const { discounts } = item.product;
-  const { quantity } = item;
-
-  const baseDiscount = discounts.reduce((maxDiscount, discount) => {
-    return quantity >= discount.quantity && discount.rate > maxDiscount
-      ? discount.rate
-      : maxDiscount;
-  }, 0);
-
-  const hasBulkPurchaseInCart = cart.some((cartItem) => cartItem.quantity >= 10);
-  if (hasBulkPurchaseInCart) {
-    return Math.min(baseDiscount + 0.05, 0.5); // 대량 구매 시 추가 5% 할인
-  }
-
-  return baseDiscount;
-};
-
-function App() {
+export default function App() {
   const {
     //coupons
     coupons,
@@ -54,10 +24,44 @@ function App() {
     updateCart,
     totalItemCount,
     cartTotalPrice,
+
+    // cart utilities
+    discountRate,
+    discountedItemTotalPrice,
+    validateUpdateQuantity,
   } = useCart();
 
   const { notifications, addNotification } = useNotification();
   const { products, addProduct, updateProduct, deleteProduct } = useProduct(addNotification);
+
+  // ui
+  const {
+    // Product form state
+    showProductForm,
+    editingProduct,
+    productForm,
+    resetProductForm,
+
+    // Product form handlers
+    handleProductSubmit,
+    handleNewProduct,
+    handleEditProduct,
+    handleProductFormChange,
+
+    // Coupon form state
+    showCouponForm,
+    toggleCouponForm,
+    couponForm,
+    resetCouponForm,
+
+    // Coupon form handlers
+    handleCouponSubmit,
+    handleCouponFormChange,
+
+    // Validation
+    validateProductForm,
+    validateCouponForm,
+  } = useAdminForm({ addProduct, updateProduct, addCoupon });
 
   const { totalBeforeDiscount, totalAfterDiscount } = cartTotalPrice;
 
@@ -65,91 +69,30 @@ function App() {
     return product.stock - (cart.find((item) => item.product.id === product.id)?.quantity ?? 0);
   };
 
-  const discountRate = (item: CartItem): number => {
-    const discountedItemTotalPriceValue = getDiscountedItemTotalPrice(item, cart);
+  const remainingStock = (product: Product) => getRemainingStock(product);
 
-    const originalPrice = item.product.price * item.quantity;
-    const hasDiscount = discountedItemTotalPriceValue < originalPrice;
-    return hasDiscount
-      ? roundedPrice((1 - discountedItemTotalPriceValue / originalPrice) * 100)
-      : 0;
+  const validateAddToCart = (product: ProductWithUI): boolean => {
+    const remainingStock = getRemainingStock(product);
+    if (remainingStock <= 0) {
+      addNotification('재고가 부족합니다!', 'error');
+      return false;
+    }
+    return true;
   };
 
-  const discountedItemTotalPrice = (item: CartItem) => {
-    return getDiscountedItemTotalPrice(item, cart);
-  };
+  const { searchTerm, handleSearchTermChange, debouncedSearchTerm, filteredProducts, resetSearch } =
+    useSearch(products);
 
-  // ui
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const [showCouponForm, setShowCouponForm] = useState(false);
-  const [showProductForm, setShowProductForm] = useState(false);
-
   const [activeTab, setActiveTab] = useState<'products' | 'coupons'>('products');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
   const notifyCompleteOrder = () => {
     const orderNumber = `ORD-${Date.now()}`;
     addNotification(`주문이 완료되었습니다. 주문번호: ${orderNumber}`, 'success');
   };
 
-  // Admin
-  const [editingProduct, setEditingProduct] = useState<string | null>(null);
-  const [productForm, setProductForm] = useState({
-    name: '',
-    price: 0,
-    stock: 0,
-    description: '',
-    discounts: [] as Array<{ quantity: number; rate: number }>,
-  });
-
-  const [couponForm, setCouponForm] = useState({
-    name: '',
-    code: '',
-    discountType: 'amount' as 'amount' | 'percentage',
-    discountValue: 0,
-  });
-
-  const formatPrice = (price: number, productId?: string): string => {
-    if (productId) {
-      const product = products.find((p) => p.id === productId);
-      if (product && getRemainingStock(product) <= 0) {
-        return 'SOLD OUT';
-      }
-    }
-
-    if (isAdmin) {
-      return commaizedNumberWithUnit(price, '원');
-    }
-
-    return commaizedNumberWithCurrencyUnit(price, '₩', '원');
-  };
-
   // ------------------------------------------------------------
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  const validateUpdateQuantity = ({
-    product,
-    newQuantity,
-  }: {
-    product: ProductWithUI;
-    newQuantity: number;
-  }) => {
-    // 재고보다 많을때
-    if (newQuantity > product.stock) {
-      addNotification(`재고는 ${product.stock}개까지만 있습니다.`, 'error');
-      return false;
-    }
-
-    return true;
-  };
 
   const updateQuantity = (productId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
@@ -172,73 +115,21 @@ function App() {
     updateCart(updatedCart);
   };
 
-  const validateAddToCart = (product: ProductWithUI) => {
-    const remainingStock = getRemainingStock(product);
-    if (remainingStock <= 0) {
-      addNotification('재고가 부족합니다!', 'error');
-      return false;
-    }
+  const handleAddToCart = (product: ProductWithUI) => {
+    if (!validateAddToCart(product)) return;
 
-    return true;
-  };
-
-  const notifyAddCoupon = ({ newCoupon }: { newCoupon: Coupon }) => {
-    const existingCoupon = coupons.find(({ code }) => code === newCoupon.code);
-
-    return existingCoupon
-      ? addNotification('이미 존재하는 쿠폰 코드입니다.', 'error')
-      : addNotification('쿠폰이 추가되었습니다.', 'success');
-  };
-
-  const handleProductSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingProduct && editingProduct !== 'new') {
-      updateProduct(editingProduct, productForm);
-      setEditingProduct(null);
-    } else {
-      addProduct({
-        ...productForm,
-        discounts: productForm.discounts,
-      });
-    }
-    setProductForm({ name: '', price: 0, stock: 0, description: '', discounts: [] });
-    setEditingProduct(null);
-    setShowProductForm(false);
-  };
-
-  const handleCouponSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    addCoupon(couponForm as Coupon);
-    notifyAddCoupon({ newCoupon: couponForm as Coupon });
-    setCouponForm({
-      name: '',
-      code: '',
-      discountType: 'amount',
-      discountValue: 0,
+    addToCart({
+      product,
+      validateUpdateQuantity: (params) => {
+        const result = validateUpdateQuantity(params);
+        if (!result.isValid && result.message) {
+          addNotification(result.message, 'error');
+        }
+        return result.isValid;
+      },
     });
-    setShowCouponForm(false);
+    addNotification('장바구니에 담았습니다', 'success');
   };
-
-  const startEditProduct = (product: ProductWithUI) => {
-    setEditingProduct(product.id);
-    setProductForm({
-      name: product.name,
-      price: product.price,
-      stock: product.stock,
-      description: product.description || '',
-      discounts: product.discounts || [],
-    });
-    setShowProductForm(true);
-  };
-
-  const filteredProducts = debouncedSearchTerm
-    ? products.filter(
-        (product) =>
-          product.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-          (product.description &&
-            product.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase()))
-      )
-    : products;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -284,7 +175,7 @@ function App() {
                   <input
                     type="text"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={handleSearchTermChange}
                     placeholder="상품 검색..."
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                   />
@@ -293,7 +184,10 @@ function App() {
             </div>
             <nav className="flex items-center space-x-4">
               <button
-                onClick={() => setIsAdmin(!isAdmin)}
+                onClick={() => {
+                  setIsAdmin(!isAdmin);
+                  resetSearch();
+                }}
                 className={`px-3 py-1.5 text-sm rounded transition-colors ${
                   isAdmin ? 'bg-gray-800 text-white' : 'text-gray-600 hover:text-gray-900'
                 }`}
@@ -365,17 +259,7 @@ function App() {
                   <div className="flex justify-between items-center">
                     <h2 className="text-lg font-semibold">상품 목록</h2>
                     <button
-                      onClick={() => {
-                        setEditingProduct('new');
-                        setProductForm({
-                          name: '',
-                          price: 0,
-                          stock: 0,
-                          description: '',
-                          discounts: [],
-                        });
-                        setShowProductForm(true);
-                      }}
+                      onClick={handleNewProduct}
                       className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800"
                     >
                       새 상품 추가
@@ -411,7 +295,11 @@ function App() {
                             {product.name}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {formatPrice(product.price, product.id)}
+                            <ProductPrice
+                              product={product}
+                              isAdmin={isAdmin}
+                              remainingStock={remainingStock(product)}
+                            />
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             <span
@@ -431,7 +319,7 @@ function App() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button
-                              onClick={() => startEditProduct(product)}
+                              onClick={() => handleEditProduct(product)}
                               className="text-indigo-600 hover:text-indigo-900 mr-3"
                             >
                               수정
@@ -450,7 +338,15 @@ function App() {
                 </div>
                 {showProductForm && (
                   <div className="p-6 border-t border-gray-200 bg-gray-50">
-                    <form onSubmit={handleProductSubmit} className="space-y-4">
+                    <form
+                      onSubmit={(e) => {
+                        const result = handleProductSubmit(e);
+                        if (result.success) {
+                          resetProductForm();
+                        }
+                      }}
+                      className="space-y-4"
+                    >
                       <h3 className="text-lg font-medium text-gray-900">
                         {editingProduct === 'new' ? '새 상품 추가' : '상품 수정'}
                       </h3>
@@ -463,7 +359,7 @@ function App() {
                             type="text"
                             value={productForm.name}
                             onChange={(e) =>
-                              setProductForm({ ...productForm, name: e.target.value })
+                              handleProductFormChange({ ...productForm, name: e.target.value })
                             }
                             className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border"
                             required
@@ -477,7 +373,10 @@ function App() {
                             type="text"
                             value={productForm.description}
                             onChange={(e) =>
-                              setProductForm({ ...productForm, description: e.target.value })
+                              handleProductFormChange({
+                                ...productForm,
+                                description: e.target.value,
+                              })
                             }
                             className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border"
                           />
@@ -492,7 +391,7 @@ function App() {
                             onChange={(e) => {
                               const value = e.target.value;
                               if (value === '' || /^\d+$/.test(value)) {
-                                setProductForm({
+                                handleProductFormChange({
                                   ...productForm,
                                   price: value === '' ? 0 : parseInt(value),
                                 });
@@ -501,10 +400,10 @@ function App() {
                             onBlur={(e) => {
                               const value = e.target.value;
                               if (value === '') {
-                                setProductForm({ ...productForm, price: 0 });
+                                handleProductFormChange({ ...productForm, price: 0 });
                               } else if (parseInt(value) < 0) {
                                 addNotification('가격은 0보다 커야 합니다', 'error');
-                                setProductForm({ ...productForm, price: 0 });
+                                handleProductFormChange({ ...productForm, price: 0 });
                               }
                             }}
                             className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border"
@@ -522,7 +421,7 @@ function App() {
                             onChange={(e) => {
                               const value = e.target.value;
                               if (value === '' || /^\d+$/.test(value)) {
-                                setProductForm({
+                                handleProductFormChange({
                                   ...productForm,
                                   stock: value === '' ? 0 : parseInt(value),
                                 });
@@ -531,13 +430,13 @@ function App() {
                             onBlur={(e) => {
                               const value = e.target.value;
                               if (value === '') {
-                                setProductForm({ ...productForm, stock: 0 });
+                                handleProductFormChange({ ...productForm, stock: 0 });
                               } else if (parseInt(value) < 0) {
-                                addNotification('재고는 0보다 커야 합니다', 'error');
-                                setProductForm({ ...productForm, stock: 0 });
+                                addNotification(formatErrorMessageProduct('재고', 0), 'error');
+                                handleProductFormChange({ ...productForm, stock: 0 });
                               } else if (parseInt(value) > 9999) {
-                                addNotification('재고는 9999개를 초과할 수 없습니다', 'error');
-                                setProductForm({ ...productForm, stock: 9999 });
+                                addNotification(formatExceedErrorMessage('재고', 9999), 'error');
+                                handleProductFormChange({ ...productForm, stock: 9999 });
                               }
                             }}
                             className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border"
@@ -561,8 +460,11 @@ function App() {
                                 value={discount.quantity}
                                 onChange={(e) => {
                                   const newDiscounts = [...productForm.discounts];
-                                  newDiscounts[index].quantity = parseInt(e.target.value) || 0;
-                                  setProductForm({ ...productForm, discounts: newDiscounts });
+                                  newDiscounts[index].quantity = parseInt(e.target.value) ?? 0;
+                                  handleProductFormChange({
+                                    ...productForm,
+                                    discounts: newDiscounts,
+                                  });
                                 }}
                                 className="w-20 px-2 py-1 border rounded"
                                 min="1"
@@ -574,8 +476,11 @@ function App() {
                                 value={discount.rate * 100}
                                 onChange={(e) => {
                                   const newDiscounts = [...productForm.discounts];
-                                  newDiscounts[index].rate = (parseInt(e.target.value) || 0) / 100;
-                                  setProductForm({ ...productForm, discounts: newDiscounts });
+                                  newDiscounts[index].rate = (parseInt(e.target.value) ?? 0) / 100;
+                                  handleProductFormChange({
+                                    ...productForm,
+                                    discounts: newDiscounts,
+                                  });
                                 }}
                                 className="w-16 px-2 py-1 border rounded"
                                 min="0"
@@ -589,7 +494,10 @@ function App() {
                                   const newDiscounts = productForm.discounts.filter(
                                     (_, i) => i !== index
                                   );
-                                  setProductForm({ ...productForm, discounts: newDiscounts });
+                                  handleProductFormChange({
+                                    ...productForm,
+                                    discounts: newDiscounts,
+                                  });
                                 }}
                                 className="text-red-600 hover:text-red-800"
                               >
@@ -612,7 +520,7 @@ function App() {
                           <button
                             type="button"
                             onClick={() => {
-                              setProductForm({
+                              handleProductFormChange({
                                 ...productForm,
                                 discounts: [...productForm.discounts, { quantity: 10, rate: 0.1 }],
                               });
@@ -627,17 +535,7 @@ function App() {
                       <div className="flex justify-end gap-3">
                         <button
                           type="button"
-                          onClick={() => {
-                            setEditingProduct(null);
-                            setProductForm({
-                              name: '',
-                              price: 0,
-                              stock: 0,
-                              description: '',
-                              discounts: [],
-                            });
-                            setShowProductForm(false);
-                          }}
+                          onClick={resetProductForm}
                           className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                         >
                           취소
@@ -704,7 +602,7 @@ function App() {
 
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 flex items-center justify-center hover:border-gray-400 transition-colors">
                       <button
-                        onClick={() => setShowCouponForm(!showCouponForm)}
+                        onClick={toggleCouponForm}
                         className="text-gray-400 hover:text-gray-600 flex flex-col items-center"
                       >
                         <svg
@@ -727,7 +625,15 @@ function App() {
 
                   {showCouponForm && (
                     <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                      <form onSubmit={handleCouponSubmit} className="space-y-4">
+                      <form
+                        onSubmit={(e) => {
+                          const result = handleCouponSubmit(e);
+                          if (result.success) {
+                            resetCouponForm();
+                          }
+                        }}
+                        className="space-y-4"
+                      >
                         <h3 className="text-md font-medium text-gray-900">새 쿠폰 생성</h3>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                           <div>
@@ -738,7 +644,7 @@ function App() {
                               type="text"
                               value={couponForm.name}
                               onChange={(e) =>
-                                setCouponForm({ ...couponForm, name: e.target.value })
+                                handleCouponFormChange({ ...couponForm, name: e.target.value })
                               }
                               className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border text-sm"
                               placeholder="신규 가입 쿠폰"
@@ -753,7 +659,10 @@ function App() {
                               type="text"
                               value={couponForm.code}
                               onChange={(e) =>
-                                setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })
+                                handleCouponFormChange({
+                                  ...couponForm,
+                                  code: e.target.value.toUpperCase(),
+                                })
                               }
                               className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border text-sm font-mono"
                               placeholder="WELCOME2024"
@@ -767,7 +676,7 @@ function App() {
                             <select
                               value={couponForm.discountType}
                               onChange={(e) =>
-                                setCouponForm({
+                                handleCouponFormChange({
                                   ...couponForm,
                                   discountType: e.target.value as 'amount' | 'percentage',
                                 })
@@ -788,7 +697,7 @@ function App() {
                               onChange={(e) => {
                                 const value = e.target.value;
                                 if (value === '' || /^\d+$/.test(value)) {
-                                  setCouponForm({
+                                  handleCouponFormChange({
                                     ...couponForm,
                                     discountValue: value === '' ? 0 : parseInt(value),
                                   });
@@ -799,9 +708,9 @@ function App() {
                                 if (couponForm.discountType === 'percentage') {
                                   if (value > 100) {
                                     addNotification('할인율은 100%를 초과할 수 없습니다', 'error');
-                                    setCouponForm({ ...couponForm, discountValue: 100 });
+                                    handleCouponFormChange({ ...couponForm, discountValue: 100 });
                                   } else if (value < 0) {
-                                    setCouponForm({ ...couponForm, discountValue: 0 });
+                                    handleCouponFormChange({ ...couponForm, discountValue: 0 });
                                   }
                                 } else {
                                   if (value > 100000) {
@@ -809,9 +718,12 @@ function App() {
                                       '할인 금액은 100,000원을 초과할 수 없습니다',
                                       'error'
                                     );
-                                    setCouponForm({ ...couponForm, discountValue: 100000 });
+                                    handleCouponFormChange({
+                                      ...couponForm,
+                                      discountValue: 100000,
+                                    });
                                   } else if (value < 0) {
-                                    setCouponForm({ ...couponForm, discountValue: 0 });
+                                    handleCouponFormChange({ ...couponForm, discountValue: 0 });
                                   }
                                 }
                               }}
@@ -824,7 +736,7 @@ function App() {
                         <div className="flex justify-end gap-3">
                           <button
                             type="button"
-                            onClick={() => setShowCouponForm(false)}
+                            onClick={resetCouponForm}
                             className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                           >
                             취소
@@ -909,7 +821,11 @@ function App() {
                             {/* 가격 정보 */}
                             <div className="mb-3">
                               <p className="text-lg font-bold text-gray-900">
-                                {formatPrice(product.price, product.id)}
+                                <ProductPrice
+                                  product={product}
+                                  isAdmin={isAdmin}
+                                  remainingStock={remainingStock}
+                                />
                               </p>
                               {product.discounts.length > 0 && (
                                 <p className="text-xs text-gray-500">
@@ -933,12 +849,7 @@ function App() {
 
                             {/* 장바구니 버튼 */}
                             <button
-                              onClick={() => {
-                                if (!validateAddToCart(product)) return;
-
-                                addToCart({ product, validateUpdateQuantity });
-                                addNotification('장바구니에 담았습니다', 'success');
-                              }}
+                              onClick={() => handleAddToCart(product)}
                               disabled={remainingStock <= 0}
                               className={`w-full py-2 px-4 rounded-md font-medium transition-colors ${
                                 remainingStock <= 0
@@ -1040,14 +951,14 @@ function App() {
                                 </button>
                               </div>
                               <div className="text-right">
-                                {discountRate(item) > 0 && (
+                                {discountRate({ item, cart }) > 0 && (
                                   <span className="text-xs text-red-500 font-medium block">
-                                    -{discountRate(item)}%
+                                    -{discountRate({ item, cart })}%
                                   </span>
                                 )}
                                 <p className="text-sm font-medium text-gray-900">
                                   {commaizedNumberWithUnit(
-                                    roundedPrice(discountedItemTotalPrice(item)),
+                                    roundedPrice(discountedItemTotalPrice({ item, cart })),
                                     '원'
                                   )}
                                 </p>
@@ -1143,4 +1054,26 @@ function App() {
   );
 }
 
-export default App;
+const ProductPrice = ({
+  product,
+  isAdmin,
+  remainingStock,
+}: {
+  product: ProductWithUI;
+  isAdmin: boolean;
+  remainingStock: number;
+}) => {
+  if (remainingStock <= 0) return <SoldOutPrice />;
+  if (isAdmin) return <AdminPrice price={product.price} />;
+  return <UserPrice price={product.price} />;
+};
+
+const SoldOutPrice = () => <span className="text-red-600 font-bold">SOLD OUT</span>;
+
+const AdminPrice = ({ price }: { price: number }) => (
+  <span className="font-medium">{commaizedNumberWithUnit(price, '원')}</span>
+);
+
+const UserPrice = ({ price }: { price: number }) => (
+  <span className="font-medium">{commaziedNumberWithCurrency(price, '₩')}</span>
+);

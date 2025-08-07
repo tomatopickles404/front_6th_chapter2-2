@@ -1,6 +1,6 @@
 import { ChangeEvent } from 'react';
-import { Coupon } from '../../types';
-import { useLocalStorage } from './useLocalStorage';
+import { Coupon } from '../../../types';
+import { useLocalStorage } from '../utils/useLocalStorage';
 
 const initialCoupons: Coupon[] = [
   {

@@ -1,5 +1,5 @@
-import { ProductWithUI } from '../../types';
-import { useLocalStorage } from './useLocalStorage';
+import { ProductWithUI } from '../../../types';
+import { useLocalStorage } from '../utils/useLocalStorage';
 
 // 초기 데이터
 const initialProducts: ProductWithUI[] = [

@@ -1,8 +1,8 @@
 import { useActiveTab } from '../hooks';
 import { Coupon, ProductWithUI } from '../../types';
 import { Tab } from '../../shared/components';
-import { ProductList } from '../components/ProductList';
-import { CouponList } from '../components/CouponList';
+import { ProductList } from '../components/product';
+import { CouponList } from '../components/coupon';
 
 interface AdminPageProps {
   addProduct: (product: Omit<ProductWithUI, 'id'>) => void;

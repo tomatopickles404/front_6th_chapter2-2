@@ -1,5 +1,5 @@
 import { CartItem, ProductWithUI } from '../../../types';
-import { CartItemDiscount, CartItemPrice } from '../cart';
+import { CartItemDiscount, CartItemPrice } from './';
 import { UpdateQuantityResult } from '../../utils/cart';
 import { QuantityButton, RemoveButton, QuantityDisplay } from '../../../shared/components';
 
@@ -77,10 +77,22 @@ function CartItemRow({
   return (
     <div className="border-b pb-3 last:border-b-0">
       <CartItemHeader item={item} onRemoveItem={onRemoveItem} />
-      <div className="flex items-center justify-between">
-        <QuantityControls quantity={item.quantity} onQuantityChange={handleQuantityChange} />
-        <CartItemInfo item={item} cart={cart} />
-      </div>
+      <CartItemContent item={item} cart={cart} onQuantityChange={handleQuantityChange} />
+    </div>
+  );
+}
+
+interface CartItemContentProps {
+  item: CartItem;
+  cart: CartItem[];
+  onQuantityChange: (newQuantity: number) => void;
+}
+
+function CartItemContent({ item, cart, onQuantityChange }: CartItemContentProps) {
+  return (
+    <div className="flex items-center justify-between">
+      <QuantityControls quantity={item.quantity} onQuantityChange={onQuantityChange} />
+      <CartItemInfo item={item} cart={cart} />
     </div>
   );
 }

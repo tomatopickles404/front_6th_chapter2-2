@@ -1,7 +1,7 @@
-import { ProductWithUI } from '../../types';
-import { Button } from '../../shared/components';
-import { useProductList } from '../hooks/admin';
-import { ProductPrice } from './cart';
+import { ProductWithUI } from '../../../types';
+import { Button } from '../../../shared/components';
+import { useProductList } from '../../hooks/admin';
+import { ProductPrice } from './';
 
 interface ProductListProps {
   products: ProductWithUI[];

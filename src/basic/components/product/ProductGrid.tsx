@@ -1,18 +1,13 @@
 import { ProductWithUI } from '../../../types';
-import {
-  ProductPrice,
-  ProductStockStatus,
-  ProductDiscountBadge,
-  ProductDiscountInfo,
-} from '../cart';
+import { ProductPrice, ProductStockStatus, ProductDiscountBadge, ProductDiscountInfo } from '.';
 
-interface ProductListProps {
+interface ProductGridProps {
   products: ProductWithUI[];
   remainingStock: (product: ProductWithUI) => number;
   onAddToCart: (product: ProductWithUI) => void;
 }
 
-export function ProductList({ products, remainingStock, onAddToCart }: ProductListProps) {
+export function ProductGrid({ products, remainingStock, onAddToCart }: ProductGridProps) {
   if (products.length === 0) {
     return null;
   }

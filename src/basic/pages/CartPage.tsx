@@ -1,5 +1,5 @@
 import { CartItem, Coupon, ProductWithUI } from '../../types';
-import { ProductList, CartList, EmptyState } from '../components/ui';
+import { ProductList, CartList, EmptyState } from '../components';
 import { commaizedNumberWithUnit } from '../../shared/utils/commaizedNumber';
 import { UpdateQuantityResult } from '../utils/cart';
 

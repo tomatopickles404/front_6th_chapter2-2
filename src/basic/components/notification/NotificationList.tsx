@@ -2,7 +2,7 @@ import { Notification } from '../../../types';
 
 interface NotificationListProps {
   notifications: Notification[];
-  onDismiss: (message: string, type: string) => void;
+  onDismiss: (message: string, type?: 'error' | 'success' | 'warning') => void;
 }
 
 export function NotificationList({ notifications, onDismiss }: NotificationListProps) {

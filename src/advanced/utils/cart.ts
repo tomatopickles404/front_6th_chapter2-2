@@ -10,7 +10,6 @@ export type UpdateQuantityResult =
       maxStock?: number;
     };
 
-// 외부로 return되는 순수함수들
 export const discountRate = ({ item, cart }: { item: CartItem; cart: CartItem[] }): number => {
   const discountedItemTotalPriceValue = getProductDiscountedPrice(item, cart);
   const originalPrice = item.product.price * item.quantity;
@@ -36,7 +35,6 @@ export const validateUpdateQuantity = ({
   return { isValid: true };
 };
 
-// 내부에서만 사용되는 순수함수들 (export하지 않음)
 const getProductDiscountRate = (item: CartItem): number => {
   const { discounts } = item.product;
   const { quantity } = item;

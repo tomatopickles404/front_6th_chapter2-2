@@ -82,6 +82,7 @@ function CartItemRow({
   );
 }
 
+// 카트 아이템 컨텐츠
 interface CartItemContentProps {
   item: CartItem;
   cart: CartItem[];
@@ -97,6 +98,7 @@ function CartItemContent({ item, cart, onQuantityChange }: CartItemContentProps)
   );
 }
 
+// 카트 아이템 헤더
 interface CartItemHeaderProps {
   item: CartItem;
   onRemoveItem: (productId: string) => void;
@@ -111,6 +113,7 @@ function CartItemHeader({ item, onRemoveItem }: CartItemHeaderProps) {
   );
 }
 
+// 수량 컨트롤
 interface QuantityControlsProps {
   quantity: number;
   onQuantityChange: (newQuantity: number) => void;
@@ -126,6 +129,7 @@ function QuantityControls({ quantity, onQuantityChange }: QuantityControlsProps)
   );
 }
 
+// 카트 아이템 정보
 interface CartItemInfoProps {
   item: CartItem;
   cart: CartItem[];

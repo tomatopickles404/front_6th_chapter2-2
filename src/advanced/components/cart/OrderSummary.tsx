@@ -29,6 +29,7 @@ export const OrderSummary = ({
             <span>{`-${commaizedNumberWithUnit(roundedPrice(discountAmount), '원')}`}</span>
           </div>
         )}
+
         <div className="flex justify-between py-2 border-t border-gray-200">
           <span className="font-semibold">결제 예정 금액</span>
           <span className="font-bold text-lg text-gray-900">

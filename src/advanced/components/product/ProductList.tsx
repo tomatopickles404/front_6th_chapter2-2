@@ -4,7 +4,6 @@ import { Button } from '../../../shared/components';
 import { useProductList } from '../../hooks/admin';
 import { useCart } from '../../hooks/cart/useCart';
 import { useProduct } from '../../hooks/product/useProduct';
-import { ProductPrice } from './';
 import { ProductTable } from './ProductTable';
 import { useNotification } from '../../hooks/notification/useNotification';
 

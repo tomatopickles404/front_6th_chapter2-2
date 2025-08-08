@@ -18,7 +18,7 @@ export function useNotification() {
     }, 3000);
   };
 
-  const removeNotification = (message: string, type?: 'error' | 'success' | 'warning') => {
+  const removeNotification = (message: string) => {
     setNotifications((prev) => prev.filter((n) => n.message !== message));
   };
 

@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface IconProps {
   name: 'cart' | 'close' | 'plus' | 'minus' | 'edit' | 'delete' | 'image';
   size?: 'sm' | 'md' | 'lg';

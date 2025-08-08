@@ -17,7 +17,7 @@ export function AdminPage({ addNotification }: AdminPageProps) {
       <Tab activeTab={activeTab} onSwitchTab={handleSwitchTab} />
 
       {activeTab === 'products' ? (
-        <ProductList addNotification={addNotification} />
+        <ProductList />
       ) : (
         <CouponList addNotification={addNotification} />
       )}

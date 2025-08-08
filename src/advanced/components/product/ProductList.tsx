@@ -27,13 +27,7 @@ type SubmitResult = {
 
 export function ProductList() {
   const { addNotification } = useNotification();
-  const {
-    products,
-    addProduct,
-    updateProduct,
-    deleteProduct: handleDeleteProduct,
-    getRemainingStock,
-  } = useProduct();
+  const { products, addProduct, updateProduct, deleteProduct, getRemainingStock } = useProduct();
 
   const {
     showProductForm,
@@ -42,7 +36,7 @@ export function ProductList() {
     resetProductForm,
     handleNewProduct,
     handleEditProduct,
-    handleProductSubmit,
+    handleFormSubmit,
     handleProductFormChange,
     validateProductForm,
   } = useProductList({ addProduct, updateProduct });
@@ -50,6 +44,24 @@ export function ProductList() {
   const { cart } = useCart();
 
   const remainingStock = (product: ProductWithUI) => getRemainingStock({ product, cart });
+
+  const handleDeleteProduct = (productId: string) => {
+    deleteProduct(productId);
+    addNotification('상품이 삭제되었습니다.', 'success');
+  };
+
+  const handleSubmitProduct = (e: FormEvent): SubmitResult => {
+    const result = handleFormSubmit(e);
+    if (result.success) {
+      addNotification(
+        editingProduct && editingProduct !== 'new'
+          ? '상품이 수정되었습니다.'
+          : '상품이 추가되었습니다.',
+        'success'
+      );
+    }
+    return result;
+  };
 
   return (
     <section className="bg-white rounded-lg border border-gray-200">
@@ -65,7 +77,7 @@ export function ProductList() {
           editingProduct={editingProduct}
           productForm={productForm}
           onProductFormChange={handleProductFormChange}
-          onProductSubmit={handleProductSubmit}
+          onProductSubmit={handleSubmitProduct}
           onResetForm={resetProductForm}
           validateProductForm={validateProductForm}
           addNotification={addNotification}

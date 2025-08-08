@@ -1,7 +1,6 @@
 import { CartItem, ProductWithUI } from '../../../types';
 import { useAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
-import { useNotification } from '../notification/useNotification';
 
 // 초기 데이터
 const initialProducts: ProductWithUI[] = [
@@ -51,7 +50,6 @@ const getRemainingStock = ({
 const productsAtom = atomWithStorage<ProductWithUI[]>('products', initialProducts);
 
 export function useProduct() {
-  const { addNotification } = useNotification();
   const [products, setProducts] = useAtom(productsAtom);
 
   const addProduct = (newProduct: Omit<ProductWithUI, 'id'>) => {
@@ -60,19 +58,16 @@ export function useProduct() {
       id: `p${Date.now()}`,
     };
     setProducts((prev) => [...prev, product]);
-    addNotification('상품이 추가되었습니다.', 'success');
   };
 
   const updateProduct = (productId: string, updates: Partial<ProductWithUI>) => {
     setProducts((prev) =>
       prev.map((product) => (product.id === productId ? { ...product, ...updates } : product))
     );
-    addNotification('상품이 수정되었습니다.', 'success');
   };
 
   const deleteProduct = (productId: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== productId));
-    addNotification('상품이 삭제되었습니다.', 'success');
   };
 
   return {

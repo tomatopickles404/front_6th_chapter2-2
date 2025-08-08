@@ -35,7 +35,8 @@ function CouponGrid({ onToggleForm, addNotification }: CouponGridProps) {
   const { coupons, deleteCoupon } = useCoupon();
 
   const handleDelete = (couponCode: string) => {
-    deleteCoupon(couponCode, () => addNotification('쿠폰이 삭제되었습니다.', 'success'));
+    deleteCoupon(couponCode);
+    addNotification('쿠폰이 삭제되었습니다.', 'success');
   };
 
   return (

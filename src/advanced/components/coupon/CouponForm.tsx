@@ -53,7 +53,10 @@ export function CouponForm({ addNotification }: CouponFormProps) {
     <div className="mt-6 p-4 bg-gray-50 rounded-lg">
       <form
         onSubmit={(e: FormEvent) => {
-          handleFormSubmit(e, () => addNotification('쿠폰이 생성되었습니다.', 'success'));
+          const { success } = handleFormSubmit(e);
+          if (success) {
+            addNotification('쿠폰이 생성되었습니다.', 'success');
+          }
         }}
         className="space-y-4"
       >

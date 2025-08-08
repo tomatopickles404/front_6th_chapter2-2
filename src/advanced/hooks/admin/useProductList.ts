@@ -38,7 +38,7 @@ export function useProductList({
     discounts: [],
   });
 
-  const handleProductSubmit = (e: React.FormEvent): { success: boolean; message?: string } => {
+  const handleFormSubmit = (e: React.FormEvent): { success: boolean; message?: string } => {
     e.preventDefault();
 
     // Validate all fields before submit
@@ -144,7 +144,7 @@ export function useProductList({
     resetProductForm,
 
     // Product form handlers
-    handleProductSubmit,
+    handleFormSubmit,
     handleNewProduct,
     handleEditProduct,
     handleProductFormChange,

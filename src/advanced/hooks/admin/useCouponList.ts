@@ -31,10 +31,7 @@ export function useCouponList() {
     discountValue: 0,
   });
 
-  const handleCouponSubmit = (
-    e: FormEvent,
-    onSuccess?: () => void
-  ): { success: boolean; message?: string } => {
+  const handleCouponSubmit = (e: FormEvent): { success: boolean; message?: string } => {
     e.preventDefault();
 
     const discountValidation = validateCouponForm('discountValue', couponForm.discountValue);
@@ -52,7 +49,7 @@ export function useCouponList() {
 
     try {
       const newCoupon = couponForm as Coupon;
-      addCoupon(newCoupon, onSuccess);
+      addCoupon(newCoupon);
       return { success: true, message: formatAddMessage('쿠폰') };
     } catch (error) {
       return { success: false, message: formatErrorMessageCRUD('쿠폰', '추가') };
@@ -92,11 +89,12 @@ export function useCouponList() {
     setCouponForm((prev) => ({ ...prev, ...updates }));
   };
 
-  const handleFormSubmit = (e: React.FormEvent, onSuccess?: () => void) => {
-    const result = handleCouponSubmit(e, onSuccess);
+  const handleFormSubmit = (e: React.FormEvent) => {
+    const result = handleCouponSubmit(e);
     if (result.success) {
       resetCouponForm();
     }
+    return result;
   };
 
   return {

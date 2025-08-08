@@ -20,6 +20,10 @@ const initialCoupons: Coupon[] = [
 const couponsAtom = atom<Coupon[]>(initialCoupons);
 const selectedCouponAtom = atom<Coupon | null>(null);
 
+export type ApplyCouponResult =
+  | { success: true }
+  | { success: false; reason: 'PERCENTAGE_UNDER_MIN_TOTAL' | 'COUPON_NOT_FOUND' };
+
 export function useCoupon() {
   const [coupons, setCoupons] = useAtom(couponsAtom);
   const [selectedCoupon, setSelectedCoupon] = useAtom(selectedCouponAtom);
@@ -28,53 +32,47 @@ export function useCoupon() {
 
   const resetCoupons = () => setCoupons(initialCoupons);
 
-  const addCoupon = (newCoupon: Coupon, onSuccess?: () => void) => {
+  const addCoupon = (newCoupon: Coupon) => {
     setCoupons((prev) => [...prev, newCoupon]);
-    onSuccess?.();
   };
 
-  const deleteCoupon = (couponCode: string, onSuccess?: () => void) => {
+  const deleteCoupon = (couponCode: string) => {
     setCoupons((prev) => prev.filter((c) => c.code !== couponCode));
 
     if (selectedCoupon?.code === couponCode) {
       setSelectedCoupon(null);
     }
-    onSuccess?.();
   };
 
   const validateApplyCoupon = ({
     coupon,
     totalAfterDiscount,
-    notificationMessage,
   }: {
     coupon: Coupon;
     totalAfterDiscount: number;
-    notificationMessage: () => void;
-  }) => {
+  }): ApplyCouponResult => {
     const isNotOver10000 = totalAfterDiscount < 10000;
     if (isNotOver10000 && coupon.discountType === 'percentage') {
-      notificationMessage();
-      return false;
+      return { success: false, reason: 'PERCENTAGE_UNDER_MIN_TOTAL' };
     }
 
-    return true;
+    return { success: true };
   };
 
   const applyCoupon = ({
     coupon,
     totalAfterDiscount,
-    notificationMessage,
   }: {
     coupon: Coupon;
     totalAfterDiscount: number;
-    notificationMessage: () => void;
-  }) => {
-    if (!validateApplyCoupon({ coupon, totalAfterDiscount, notificationMessage })) {
-      return;
+  }): ApplyCouponResult => {
+    const validation = validateApplyCoupon({ coupon, totalAfterDiscount });
+    if (!validation.success) {
+      return validation;
     }
 
     updateSelectedCoupon(coupon);
-    notificationMessage();
+    return { success: true };
   };
 
   const updateSelectedCoupon = (coupon: Coupon) => {
@@ -83,21 +81,15 @@ export function useCoupon() {
 
   const handleChangeCoupon = (
     e: ChangeEvent<HTMLSelectElement>,
-    totalAfterDiscount: number,
-    notificationMessage: () => void
-  ) => {
+    totalAfterDiscount: number
+  ): ApplyCouponResult => {
     const coupon = coupons.find((c) => c.code === e.target.value);
     if (coupon) {
-      applyCoupon({
-        coupon,
-        totalAfterDiscount,
-        notificationMessage,
-      });
-
-      return;
+      return applyCoupon({ coupon, totalAfterDiscount });
     }
 
     resetSelectedCoupon();
+    return { success: false, reason: 'COUPON_NOT_FOUND' };
   };
 
   return {

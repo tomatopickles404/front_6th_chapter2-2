@@ -205,9 +205,8 @@ interface CouponSectionProps {
   onAddNotification: (message: string, type?: 'error' | 'success' | 'warning') => void;
   handleChangeCoupon: (
     e: React.ChangeEvent<HTMLSelectElement>,
-    totalAfterDiscount: number,
-    callback: () => void
-  ) => void;
+    totalAfterDiscount: number
+  ) => { success: boolean; reason?: string };
 }
 
 function CouponSection({
@@ -227,11 +226,14 @@ function CouponSection({
         <select
           className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
           value={selectedCoupon?.code || ''}
-          onChange={(e) =>
-            handleChangeCoupon(e, totalAfterDiscount, () =>
-              onAddNotification('쿠폰이 적용되었습니다.', 'success')
-            )
-          }
+          onChange={(e) => {
+            const result = handleChangeCoupon(e, totalAfterDiscount);
+            if (result.success) {
+              onAddNotification('쿠폰이 적용되었습니다.', 'success');
+            } else if (result.reason === 'PERCENTAGE_UNDER_MIN_TOTAL') {
+              onAddNotification('10,000원 미만에서는 정률 쿠폰을 사용할 수 없습니다.', 'error');
+            }
+          }}
         >
           <option value="">쿠폰 선택</option>
           {coupons.map(({ code, name, discountType, discountValue }) => (

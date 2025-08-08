@@ -28,16 +28,18 @@ export function useCoupon() {
 
   const resetCoupons = () => setCoupons(initialCoupons);
 
-  const addCoupon = (newCoupon: Coupon) => {
+  const addCoupon = (newCoupon: Coupon, onSuccess?: () => void) => {
     setCoupons((prev) => [...prev, newCoupon]);
+    onSuccess?.();
   };
 
-  const deleteCoupon = (couponCode: string) => {
+  const deleteCoupon = (couponCode: string, onSuccess?: () => void) => {
     setCoupons((prev) => prev.filter((c) => c.code !== couponCode));
 
     if (selectedCoupon?.code === couponCode) {
       setSelectedCoupon(null);
     }
+    onSuccess?.();
   };
 
   const validateApplyCoupon = ({

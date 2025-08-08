@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { Coupon } from '../../../types';
 import {
   formatAddMessage,
@@ -31,7 +31,10 @@ export function useCouponList() {
     discountValue: 0,
   });
 
-  const handleCouponSubmit = (e: React.FormEvent): { success: boolean; message?: string } => {
+  const handleCouponSubmit = (
+    e: FormEvent,
+    onSuccess?: () => void
+  ): { success: boolean; message?: string } => {
     e.preventDefault();
 
     const discountValidation = validateCouponForm('discountValue', couponForm.discountValue);
@@ -39,7 +42,6 @@ export function useCouponList() {
       return { success: false, message: discountValidation.message };
     }
 
-    // Check required fields
     if (!couponForm.name.trim()) {
       return { success: false, message: '쿠폰명을 입력해주세요.' };
     }
@@ -50,7 +52,7 @@ export function useCouponList() {
 
     try {
       const newCoupon = couponForm as Coupon;
-      addCoupon(newCoupon);
+      addCoupon(newCoupon, onSuccess);
       return { success: true, message: formatAddMessage('쿠폰') };
     } catch (error) {
       return { success: false, message: formatErrorMessageCRUD('쿠폰', '추가') };
@@ -85,31 +87,28 @@ export function useCouponList() {
     return { isValid: true };
   };
 
-  // Form update helpers
+  // 핸들러
   const handleCouponFormChange = (updates: Partial<CouponForm>) => {
     setCouponForm((prev) => ({ ...prev, ...updates }));
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
-    const result = handleCouponSubmit(e);
+  const handleFormSubmit = (e: React.FormEvent, onSuccess?: () => void) => {
+    const result = handleCouponSubmit(e, onSuccess);
     if (result.success) {
       resetCouponForm();
     }
   };
 
   return {
-    // Coupon form state
     showCouponForm,
     toggleCouponForm,
     couponForm,
     resetCouponForm,
 
-    // Coupon form handlers
     handleCouponSubmit,
     handleCouponFormChange,
     handleFormSubmit,
 
-    // Validation
     validateCouponForm,
   };
 }

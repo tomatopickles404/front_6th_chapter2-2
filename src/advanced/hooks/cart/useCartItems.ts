@@ -1,12 +1,17 @@
 import { CartItem, ProductWithUI } from '../../../types';
-import { useAtom } from 'jotai';
+import { atom, useAtom, useAtomValue } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 
 const cartAtom = atomWithStorage<CartItem[]>('cart', []);
 
+const totalItemCountAtom = atom((get) => {
+  const cart = get(cartAtom);
+  return cart.reduce((sum, item) => sum + item.quantity, 0);
+});
+
 export function useCartItems() {
   const [cart, setCart] = useAtom(cartAtom);
-  const totalItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const totalItemCount = useAtomValue(totalItemCountAtom);
 
   const updateCart = (newCart: CartItem[]) => {
     setCart(newCart);

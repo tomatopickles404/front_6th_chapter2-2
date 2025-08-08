@@ -32,17 +32,16 @@ interface CouponGridProps {
 }
 
 function CouponGrid({ onToggleForm, addNotification }: CouponGridProps) {
-  const { coupons, deleteCoupon: handleDeleteCoupon } = useCoupon();
+  const { coupons, deleteCoupon } = useCoupon();
+
+  const handleDelete = (couponCode: string) => {
+    deleteCoupon(couponCode, () => addNotification('쿠폰이 삭제되었습니다.', 'success'));
+  };
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {coupons.map((coupon) => (
-        <CouponCard
-          key={coupon.code}
-          coupon={coupon}
-          onDelete={handleDeleteCoupon}
-          onAddNotification={addNotification}
-        />
+        <CouponCard key={coupon.code} coupon={coupon} onDelete={handleDelete} />
       ))}
       <AddCouponButton onClick={onToggleForm} />
     </div>
@@ -52,15 +51,9 @@ function CouponGrid({ onToggleForm, addNotification }: CouponGridProps) {
 interface CouponCardProps {
   coupon: Coupon;
   onDelete: (couponCode: string) => void;
-  onAddNotification: (message: string, type: 'success' | 'error' | 'warning') => void;
 }
 
-function CouponCard({ coupon, onDelete, onAddNotification }: CouponCardProps) {
-  const handleDelete = () => {
-    onDelete(coupon.code);
-    onAddNotification('쿠폰이 삭제되었습니다.', 'success');
-  };
-
+function CouponCard({ coupon, onDelete }: CouponCardProps) {
   return (
     <div className="relative bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-200">
       <div className="flex justify-between items-start">
@@ -76,7 +69,7 @@ function CouponCard({ coupon, onDelete, onAddNotification }: CouponCardProps) {
           </div>
         </div>
         <Button
-          onClick={handleDelete}
+          onClick={() => onDelete(coupon.code)}
           className="text-gray-400 hover:text-red-600 transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

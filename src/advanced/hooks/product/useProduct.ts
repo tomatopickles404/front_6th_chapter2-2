@@ -37,16 +37,6 @@ const initialProducts: ProductWithUI[] = [
   },
 ];
 
-const getRemainingStock = ({
-  product,
-  cart,
-}: {
-  product: ProductWithUI;
-  cart: CartItem[];
-}): number => {
-  return product.stock - (cart.find((item) => item.product.id === product.id)?.quantity ?? 0);
-};
-
 const productsAtom = atomWithStorage<ProductWithUI[]>('products', initialProducts);
 
 export function useProduct() {
@@ -75,6 +65,5 @@ export function useProduct() {
     addProduct,
     updateProduct,
     deleteProduct,
-    getRemainingStock,
   };
 }

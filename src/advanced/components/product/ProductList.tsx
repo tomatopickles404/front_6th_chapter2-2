@@ -6,6 +6,7 @@ import { useCart } from '../../hooks/cart/useCart';
 import { useProduct } from '../../hooks/product/useProduct';
 import { ProductTable } from './ProductTable';
 import { useNotification } from '../../hooks/notification/useNotification';
+import { getRemainingStock } from '../../utils/cart';
 
 type ProductForm = {
   name: string;
@@ -27,7 +28,7 @@ type SubmitResult = {
 
 export function ProductList() {
   const { addNotification } = useNotification();
-  const { products, addProduct, updateProduct, deleteProduct, getRemainingStock } = useProduct();
+  const { products, addProduct, updateProduct, deleteProduct } = useProduct();
 
   const {
     showProductForm,
